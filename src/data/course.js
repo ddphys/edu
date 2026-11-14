@@ -24,7 +24,7 @@ export const lessons = [
     id: 'l1',
     title: 'Равноускоренное движение: теория и задачи',
     free: true,
-    videoUrl: '',
+    videoUrl: 'https://rutube.ru/video/09391c5817d4189bc014b23f904e324c/',
     description: [
       'Закон движения при постоянном ускорении',
       'Определение проекций скорости и ускорения по уравнению координаты',
@@ -80,7 +80,7 @@ $$s = \frac{at^2}{2} = \frac{2 \cdot 5^2}{2} = 25\ \text{м}.$$`,
     id: 'l2',
     title: 'Законы Ньютона: задачи',
     free: true,
-    videoUrl: '',
+    videoUrl: 'https://rutube.ru/video/09391c5817d4189bc014b23f904e324c/',
     description: [
       'Второй закон Ньютона для одного тела',
       'Сила тяжести и вес тела',
@@ -108,7 +108,7 @@ $$s = \frac{at^2}{2} = \frac{2 \cdot 5^2}{2} = 25\ \text{м}.$$`,
     id: 'l3',
     title: 'Закон сохранения энергии: теория и задачи',
     free: true,
-    videoUrl: '',
+    videoUrl: 'https://rutube.ru/video/09391c5817d4189bc014b23f904e324c/',
     description: ['Кинетическая и потенциальная энергия', 'Простейшие задачи на энергию'],
     tasks: [
       {
