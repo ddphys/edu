@@ -14,16 +14,24 @@ export function parseNumber(s) {
   return Number.isFinite(n) ? n : null
 }
 
-export function isCorrect(task, raw) {
+// У задачи может быть одно поле ответа (answer) или несколько (parts).
+// Внутри всё приводится к списку полей.
+export function getParts(task) {
+  return task.parts ?? [{ label: 'Ваш ответ', answer: task.answer, tolerance: task.tolerance }]
+}
+
+export function isCorrect(part, raw) {
   const n = parseNumber(raw)
   if (n === null) return false
-  const tol = task.tolerance ?? 0
-  return Math.abs(n - task.answer) <= tol + 1e-9
+  return Math.abs(n - part.answer) <= (part.tolerance ?? 0) + 1e-9
 }
+
+export const maxAttempts = course.attemptMultipliers.length
 
 // ---------- XP ----------
 // Без подсказок и с первой попытки — максимум.
-// Каждая подсказка снимает долю XP, вторая попытка снижает вдвое.
+// Каждая подсказка снимает долю XP, а каждая ошибка уменьшает награду
+// по шкале course.attemptMultipliers (штраф с каждой попыткой всё мягче).
 export function taskMaxXp(task) {
   return task.xp ?? course.defaultTaskXp
 }
@@ -31,7 +39,8 @@ export function taskMaxXp(task) {
 export function calcXp(task, hintsUsed, attemptNumber) {
   const max = taskMaxXp(task)
   const hintFactor = 1 - hintsUsed / (task.hints.length + 1)
-  const attemptFactor = attemptNumber > 1 ? 0.5 : 1
+  const m = course.attemptMultipliers
+  const attemptFactor = m[Math.min(attemptNumber, m.length) - 1]
   return Math.max(1, Math.round(max * hintFactor * attemptFactor))
 }
 
@@ -54,4 +63,11 @@ export function saveProgress(p) {
   }
 }
 
-export const emptyTaskState = { status: 'pending', attempts: 0, hintsUsed: 0, answer: '', xp: 0 }
+export const emptyTaskState = {
+  status: 'pending',
+  attempts: 0,
+  hintsUsed: 0,
+  answers: [], // введённые ответы по полям
+  okParts: [], // какие поля уже решены верно
+  xp: 0,
+}

@@ -1,7 +1,7 @@
 import { rutubeEmbedUrl } from '../lib.js'
 
 // Видео с Rutube встроено прямо в страницу урока, без перехода по ссылке.
-export default function Video({ url, title }) {
+export default function Video({ url, title, vertical = false }) {
   const src = rutubeEmbedUrl(url)
   if (!src) {
     return (
@@ -17,7 +17,7 @@ export default function Video({ url, title }) {
     )
   }
   return (
-    <div className="video">
+    <div className={`video ${vertical ? 'video--vertical' : ''}`}>
       <iframe
         src={src}
         title={title}

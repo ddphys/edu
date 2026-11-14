@@ -12,7 +12,7 @@ function renderInline(text) {
       if (p.startsWith('$')) {
         return katex.renderToString(p.slice(1, -1), { throwOnError: false })
       }
-      return p.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\n/g, '<br/>')
+      return p.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\*\*(.+?)\*\*/g, '<b>$1</b>').replace(/\n/g, '<br/>')
     })
     .join('')
 }
