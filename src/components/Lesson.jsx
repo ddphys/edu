@@ -30,7 +30,7 @@ export default function Lesson({ lesson, progress, setTaskState }) {
 
       <section className="card">
         <h3 className="section-title">Запись занятия</h3>
-        <Video url={lesson.videoUrl} title={lesson.title} />
+        <Video url={lesson.videoUrl} title={lesson.title} vertical={lesson.videoVertical} />
       </section>
 
       <section className="card" id="homework">
