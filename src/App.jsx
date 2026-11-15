@@ -3,12 +3,16 @@ import { course, lessons } from './data/course.js'
 import Lesson from './components/Lesson.jsx'
 import { emptyTaskState, loadProgress, saveProgress } from './lib.js'
 
+const pct = (x) => Math.round(x * 100) + '%'
+const xpLevels = Object.values(course.levelXp)
+
 const solvedOf = (l, p) => l.tasks.filter((t) => p[t.id]?.status === 'correct').length
 
 export default function App() {
   const [progress, setProgress] = useState(loadProgress)
   const [lessonId, setLessonId] = useState(lessons[0].id)
   const [showAbout, setShowAbout] = useState(false)
+  const [showRules, setShowRules] = useState(false)
 
   useEffect(() => saveProgress(progress), [progress])
 
@@ -30,12 +34,26 @@ export default function App() {
             <button className="chip" onClick={() => setShowAbout((v) => !v)}>
               О курсе
             </button>
-            <span className="chip">Опыт {totalXp} XP</span>
+            <button className="chip" onClick={() => setShowRules((v) => !v)} title="Как начисляется опыт">
+              Опыт {totalXp} XP <span className="chip__q">?</span>
+            </button>
             <button className="chip chip--link" onClick={reset}>
               Сбросить прогресс
             </button>
           </div>
           {showAbout && <p className="about">{course.about}</p>}
+          {showRules && (
+            <ul className="about rules">
+              <li>
+                Задача стоит от {Math.min(...xpLevels)} до {Math.max(...xpLevels)} XP — чем сложнее, тем дороже.
+              </li>
+              <li>
+                Ошибка −{pct(course.errorPenalty)} цены, подсказка −{pct(course.hintPenalty)}. Решили сами — получите
+                не меньше {pct(course.minShare)}.
+              </li>
+              <li>«Я не знаю» открывает решение, но XP за задачу не будет.</li>
+            </ul>
+          )}
         </div>
         <div className="teacher">
           <span>{course.teacher.name}</span>
