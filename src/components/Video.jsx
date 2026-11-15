@@ -7,11 +7,7 @@ export default function Video({ url, title, vertical = false }) {
     return (
       <div className="video video--empty">
         <div>
-          <strong>Запись занятия пока не добавлена</strong>
-          <p>
-            Вставьте ссылку на Rutube в поле <code>videoUrl</code> этого урока в файле{' '}
-            <code>src/data/course.js</code>
-          </p>
+          <strong>Не удалось распознать ссылку на Rutube</strong>
         </div>
       </div>
     )

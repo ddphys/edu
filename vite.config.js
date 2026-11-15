@@ -1,8 +1,15 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 
-// base './' — чтобы сайт работал и на GitHub Pages (в подпапке /edu/), и локально
+// Сайт отдаёт сам сервер (server/), поэтому base — корень.
+// При разработке (npm run dev) запросы к /api и /uploads проксируются на сервер localhost:3000.
 export default defineConfig({
-  base: './',
+  base: '/',
   plugins: [react()],
+  server: {
+    proxy: {
+      '/api': 'http://localhost:3000',
+      '/uploads': 'http://localhost:3000',
+    },
+  },
 })

@@ -121,3 +121,30 @@ h1, h2, h3 { margin: 0; }
 .parts input.bad { background: var(--red-bg); border-color: #ffc3b9; color: var(--red); }
 .parts input.bad::placeholder { color: #f2a99c; }
 @media (max-width: 860px) { .part { grid-template-columns: 1fr; gap: 4px; } }
+
+/* ---------- вход / регистрация / шапка ученика ---------- */
+.net-error { background: var(--red); color: #fff; padding: 8px 16px; text-align: center; }
+.auth { min-height: 100vh; display: grid; place-items: center; padding: 16px; }
+.auth__card { width: 100%; max-width: 440px; }
+.auth__title { font-size: 24px; margin-bottom: 18px; }
+.auth__form { display: grid; gap: 14px; }
+.auth__form label { display: grid; gap: 6px; font-size: 14px; color: var(--muted); }
+.auth__form input { padding: 11px 14px; border: 1px solid #dcdde5; border-radius: 8px; font: inherit; color: var(--text); }
+.auth__form .btn { justify-self: start; }
+.auth__row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.auth__alt { margin-top: 18px; }
+.ok-msg { color: var(--green); }
+.link { background: none; border: 0; padding: 0; color: var(--muted); }
+.userbar { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 12px; font-size: 14px; }
+.userbar a { color: var(--muted); text-decoration: none; }
+.userbar a:hover, .link:hover { color: var(--accent); }
+.userbar__right { display: flex; gap: 16px; align-items: center; flex-wrap: wrap; }
+.home__title { font-size: 24px; margin: 8px 0 16px; }
+.home__grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px; }
+.home__course { color: inherit; text-decoration: none; }
+.home__course h2 { font-size: 18px; margin-top: 6px; }
+.account { max-width: 520px; }
+.lessons__item.is-locked { opacity: .6; }
+.tag--draft { background: #eee; margin-left: 6px; }
+.math__img { max-width: 100%; height: auto; display: block; margin: 8px 0; border-radius: 8px; }
+@media (max-width: 860px) { .auth__row { grid-template-columns: 1fr; } }

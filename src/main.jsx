@@ -1,6 +1,14 @@
 import { createRoot } from 'react-dom/client'
+import { BrowserRouter } from 'react-router-dom'
 import 'katex/dist/katex.min.css'
 import './styles.css'
 import App from './App.jsx'
+import { AuthProvider } from './auth.jsx'
 
-createRoot(document.getElementById('root')).render(<App />)
+createRoot(document.getElementById('root')).render(
+  <BrowserRouter>
+    <AuthProvider>
+      <App />
+    </AuthProvider>
+  </BrowserRouter>,
+)

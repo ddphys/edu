@@ -1,70 +1,58 @@
 import { useState } from 'react'
 import MathText from './Math.jsx'
-import { calcXp, getParts, isCorrect, maxAttempts, taskMaxXp } from '../lib.js'
+import { api } from '../api.js'
 
-const fmt = (n) => String(n).replace('.', ',')
-
-export default function Task({ task, index, state, onChange, onNext, hasNext }) {
-  const parts = getParts(task)
+// Задача ученика. Проверка ответа, подсказки и «Я не знаю» — на сервере:
+// правильные ответы и решение приходят в браузер только после завершения задачи.
+export default function Task({ lessonId, task, index, onUpdate, onNext, hasNext }) {
+  const { parts, state } = task
   const multi = parts.length > 1
   const { status, attempts, hintsUsed } = state
   const okParts = state.okParts || []
   const done = status !== 'pending'
 
-  // Что сейчас введено в полях (для решённых полей — их верный ответ)
   const [inputs, setInputs] = useState(() => parts.map(() => ''))
   const [confirmSkip, setConfirmSkip] = useState(false)
   const [message, setMessage] = useState('')
+  const [busy, setBusy] = useState(false)
 
-  const shownValue = (i) => (done ? (state.answers?.[i] ?? '') : okParts[i] ? fmt(parts[i].answer) : inputs[i])
+  const url = (action) => `/api/lessons/${lessonId}/tasks/${task.id}/${action}`
+  const shownValue = (i) => (done ? (state.answers?.[i] ?? '') : okParts[i] ? parts[i].answer : inputs[i])
 
-  function useHint() {
-    if (hintsUsed < task.hints.length) onChange({ ...state, hintsUsed: hintsUsed + 1 })
-  }
-
-  function submit(e) {
-    e.preventDefault()
-    const open = parts.map((_, i) => i).filter((i) => !okParts[i])
-    if (open.some((i) => !inputs[i].trim())) return setMessage('Заполните все поля ответа')
-
-    const attemptNumber = attempts + 1
-    const nowOk = parts.map((p, i) => okParts[i] || isCorrect(p, inputs[i]))
-    const answers = parts.map((p, i) => (nowOk[i] ? fmt(p.answer) : inputs[i]))
-
-    if (nowOk.every(Boolean)) {
-      onChange({
-        ...state,
-        status: 'correct',
-        attempts: attemptNumber,
-        answers,
-        okParts: nowOk,
-        xp: calcXp(task, hintsUsed, attemptNumber),
-      })
-      setMessage('')
-    } else if (attemptNumber >= maxAttempts) {
-      onChange({ ...state, status: 'wrong', attempts: attemptNumber, answers, okParts: nowOk, xp: 0 })
-      setMessage('')
-    } else {
-      onChange({ ...state, attempts: attemptNumber, okParts: nowOk })
-      const left = maxAttempts - attemptNumber
-      const wrongCount = nowOk.filter((v) => !v).length
-      const now = calcXp(task, hintsUsed, attemptNumber + 1)
-      setMessage(
-        `${multi ? `Неверных ответов: ${wrongCount}. ` : 'Неверно. '}Осталось попыток: ${left}. Теперь за верное решение: ${now} XP`,
-      )
-      setInputs(parts.map(() => ''))
+  async function run(action, body) {
+    setBusy(true)
+    try {
+      const r = await api.post(url(action), body)
+      onUpdate(r.task)
+      return r
+    } catch (e) {
+      setMessage(e.message)
+    } finally {
+      setBusy(false)
     }
   }
 
-  function skip() {
-    onChange({ ...state, status: 'skipped', xp: 0 })
+  async function submit(e) {
+    e.preventDefault()
+    if (busy) return
+    const open = parts.map((_, i) => i).filter((i) => !okParts[i])
+    if (open.some((i) => !inputs[i].trim())) return setMessage('Заполните все поля ответа')
+    const r = await run('check', { answers: inputs })
+    if (!r) return
+    if (r.correct || r.task.state.status !== 'pending') return setMessage('')
+    setMessage(
+      `${multi ? `Неверных ответов: ${r.wrongCount}. ` : 'Неверно. '}Осталось попыток: ${r.attemptsLeft}. Теперь за верное решение: ${r.nextXp} XP`,
+    )
+    setInputs(parts.map(() => ''))
+  }
+
+  async function skip() {
+    await run('skip')
     setConfirmSkip(false)
     setMessage('')
   }
 
   const cls = (i) => (done ? (okParts[i] ? 'ok' : 'bad') : okParts[i] ? 'ok' : '')
-  const potential = calcXp(task, hintsUsed, attempts + 1)
-  const shownHints = task.hints.slice(0, hintsUsed)
 
   return (
     <div className="task">
@@ -77,7 +65,9 @@ export default function Task({ task, index, state, onChange, onNext, hasNext }) 
         {parts.map((p, i) =>
           multi ? (
             <div className="part" key={i}>
-              <span className="part__label">{p.label}</span>
+              <span className="part__label">
+                <MathText text={p.label} inline />
+              </span>
               <input
                 inputMode="decimal"
                 className={cls(i)}
@@ -89,13 +79,13 @@ export default function Task({ task, index, state, onChange, onNext, hasNext }) 
                   setMessage('')
                 }}
               />
-              {done && <span className="part__right">Верно: {fmt(p.answer)}</span>}
+              {done && <span className="part__right">Верно: {p.answer}</span>}
             </div>
           ) : (
             <div className="answers__row" key={i}>
               <label>
                 <span>Правильный ответ:</span>
-                <input readOnly disabled={!done} value={done ? fmt(p.answer) : '•••'} />
+                <input readOnly disabled={!done} value={done ? p.answer : '•••'} />
               </label>
               <label>
                 <span>Ваш ответ:</span>
@@ -119,16 +109,14 @@ export default function Task({ task, index, state, onChange, onNext, hasNext }) 
 
       {message && !done && <div className="msg">{message}</div>}
 
-      {shownHints.map((h, i) => (
+      {task.hints.map((h, i) => (
         <div className="hint" key={i}>
-          <div className="hint__title">
-            Подсказка {task.hints.length > 1 ? `${i + 1} из ${task.hints.length}` : ''}
-          </div>
+          <div className="hint__title">Подсказка {task.hintsTotal > 1 ? `${i + 1} из ${task.hintsTotal}` : ''}</div>
           <MathText text={h} />
         </div>
       ))}
 
-      {done && (
+      {done && task.solution && (
         <div className="solution">
           <div className="solution__title">Решение задачи:</div>
           <MathText text={task.solution} />
@@ -142,7 +130,7 @@ export default function Task({ task, index, state, onChange, onNext, hasNext }) 
             <button className="btn btn--primary" onClick={() => setConfirmSkip(false)}>
               Вернуться и решить
             </button>
-            <button className="btn btn--ghost" onClick={skip}>
+            <button className="btn btn--ghost" onClick={skip} disabled={busy}>
               Посмотреть ответ
             </button>
           </div>
@@ -152,24 +140,24 @@ export default function Task({ task, index, state, onChange, onNext, hasNext }) 
       {!done && !confirmSkip && (
         <div className="actions">
           <div className="actions__meta">
-            Попытка {attempts + 1} из {maxAttempts} · Подсказок: {hintsUsed} из {task.hints.length}
+            Попытка {attempts + 1} из {task.maxAttempts} · Подсказок: {hintsUsed} из {task.hintsTotal}
             <br />
-            За верное решение сейчас: <b>{potential} XP</b>
-            {potential < taskMaxXp(task) && <> (максимум {taskMaxXp(task)})</>}
+            За верное решение сейчас: <b>{task.potentialXp} XP</b>
+            {task.potentialXp < task.maxXp && <> (максимум {task.maxXp})</>}
           </div>
           <div className="actions__btns">
             <button
               type="button"
               className="btn btn--ghost"
-              onClick={useHint}
-              disabled={hintsUsed >= task.hints.length}
+              onClick={() => run('hint')}
+              disabled={busy || hintsUsed >= task.hintsTotal}
             >
-              {hintsUsed >= task.hints.length ? 'Подсказки закончились' : 'Подсказка'}
+              {hintsUsed >= task.hintsTotal ? (task.hintsTotal ? 'Подсказки закончились' : 'Подсказок нет') : 'Подсказка'}
             </button>
             <button type="button" className="btn btn--ghost" onClick={() => setConfirmSkip(true)}>
               Я не знаю
             </button>
-            <button className="btn btn--primary" type="submit" form={`f-${task.id}`}>
+            <button className="btn btn--primary" type="submit" form={`f-${task.id}`} disabled={busy}>
               Ответить
             </button>
           </div>
@@ -187,7 +175,7 @@ export default function Task({ task, index, state, onChange, onNext, hasNext }) 
                   : 'Попытки закончились — задача не засчитана'}
             </div>
             <div className="result__sub">
-              Попыток: {attempts} из {maxAttempts} · подсказок: {hintsUsed} из {task.hints.length}
+              Попыток: {attempts} из {task.maxAttempts} · подсказок: {hintsUsed} из {task.hintsTotal}
             </div>
           </div>
           <div className="result__right">
