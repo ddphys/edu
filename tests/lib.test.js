@@ -1,22 +1,31 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it } from 'vitest'
 import {
+  DEFAULT_XP_RULES,
   allTasks,
-  calcXp,
-  cooldownAfter,
+  calcXp as calcXpIn,
+  cooldownAfter as cooldownAfterIn,
   emptyTaskState,
-  errorCost,
+  errorCost as errorCostIn,
   errorsOf,
-  getParts,
-  hintCost,
-  isCorrect,
-  loadProgress,
-  minXp,
+  normalizeState,
+  hintCost as hintCostIn,
+  minXp as minXpIn,
   parseNumber,
   parseVideo,
   plural,
-  saveProgress,
-  taskMaxXp,
+  taskMaxXp as taskMaxXpIn,
 } from '../src/lib.js'
+import { getParts, isCorrect } from '../src/types/number/index.js'
+
+// Настройки XP теперь лежат в курсе. Тесты проверяют правила с настройками по умолчанию —
+// теми же, что были в src/data/course.js.
+const course = DEFAULT_XP_RULES
+const taskMaxXp = (task) => taskMaxXpIn(task, course)
+const errorCost = (task) => errorCostIn(task, course)
+const hintCost = (task) => hintCostIn(task, course)
+const minXp = (task) => minXpIn(task, course)
+const calcXp = (task, hints, errors) => calcXpIn(task, course, hints, errors)
+const cooldownAfter = (errors) => cooldownAfterIn(errors, course)
 
 describe('parseNumber — разбор числа', () => {
   it('понимает целые и дробные числа', () => {
@@ -143,6 +152,13 @@ describe('errorsOf — чтение старых сохранений', () => {
     expect(errorsOf({ attempts: 2, status: 'skipped' })).toBe(2)
   })
 
+  it('normalizeState дополняет состояние и не теряет ошибки старого сохранения', () => {
+    expect(normalizeState(undefined)).toEqual(emptyTaskState)
+    expect(normalizeState({ status: 'correct', attempts: 3, xp: 3 })).toMatchObject({ errors: 2, hintsUsed: 0, okParts: [], xp: 3 })
+    expect(normalizeState({ status: 'pending', attempts: 2 }).errors).toBe(2)
+    expect(normalizeState({ errors: 1, attempts: 9 }).errors).toBe(1)
+  })
+
   it('пустое состояние — ноль ошибок', () => {
     expect(errorsOf({})).toBe(0)
     expect(errorsOf(emptyTaskState)).toBe(0)
@@ -225,46 +241,6 @@ describe('plural — склонение', () => {
     expect([1, 21, 101].map(f)).toEqual(['подсказку', 'подсказку', 'подсказку'])
     expect([2, 3, 4, 22].map(f)).toEqual(['подсказки', 'подсказки', 'подсказки', 'подсказки'])
     expect([0, 5, 11, 12, 14, 111, 25].map(f)).toEqual(Array(7).fill('подсказок'))
-  })
-})
-
-describe('loadProgress / saveProgress — сохранение в браузере', () => {
-  let store
-  beforeEach(() => {
-    store = {}
-    vi.stubGlobal('localStorage', {
-      getItem: (k) => (k in store ? store[k] : null),
-      setItem: (k, v) => {
-        store[k] = String(v)
-      },
-    })
-  })
-
-  it('прогресс лежит под ключом edu-progress-v1', () => {
-    saveProgress({ l1t1: { status: 'correct', xp: 10 } })
-    expect(JSON.parse(store['edu-progress-v1'])).toEqual({ l1t1: { status: 'correct', xp: 10 } })
-    expect(loadProgress()).toEqual({ l1t1: { status: 'correct', xp: 10 } })
-  })
-
-  it('нет сохранения или оно испорчено — пустой прогресс', () => {
-    expect(loadProgress()).toEqual({})
-    store['edu-progress-v1'] = '{не json'
-    expect(loadProgress()).toEqual({})
-    store['edu-progress-v1'] = 'null'
-    expect(loadProgress()).toEqual({})
-  })
-
-  it('недоступный localStorage не роняет страницу', () => {
-    vi.stubGlobal('localStorage', {
-      getItem: () => {
-        throw new Error('нет доступа')
-      },
-      setItem: () => {
-        throw new Error('нет места')
-      },
-    })
-    expect(loadProgress()).toEqual({})
-    expect(() => saveProgress({ a: 1 })).not.toThrow()
   })
 })
 

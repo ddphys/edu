@@ -1,22 +1,20 @@
 import { useEffect, useState } from 'react'
-import { course, lessons } from './data/course.js'
 import Lesson from './components/Lesson.jsx'
 import LessonList from './components/LessonList.jsx'
-import { emptyTaskState, loadProgress, saveProgress } from './lib.js'
+import { totalXp } from './api/progress.js'
+import { useStore } from './store.jsx'
 
 // Адрес страницы хранится в хэше: «#/» — список уроков, «#/lesson/l1» — урок.
 // Так работает кнопка «Назад» в браузере и ссылку на урок можно переслать.
 const pct = (x) => Math.round(x * 100) + '%'
-const xpLevels = Object.values(course.levelXp)
 
 const lessonIdFromHash = () => window.location.hash.match(/^#\/lesson\/(.+)$/)?.[1] ?? null
 
 export default function App() {
-  const [progress, setProgress] = useState(loadProgress)
+  const { status, error, content, progress, actions } = useStore()
   const [lessonId, setLessonId] = useState(lessonIdFromHash)
   const [showRules, setShowRules] = useState(false)
 
-  useEffect(() => saveProgress(progress), [progress])
   useEffect(() => {
     const onHash = () => {
       setLessonId(lessonIdFromHash())
@@ -26,16 +24,23 @@ export default function App() {
     return () => window.removeEventListener('hashchange', onHash)
   }, [])
 
+  if (status === 'loading') return <div className="page muted">Загрузка…</div>
+  if (status === 'error')
+    return (
+      <div className="page">
+        <p>Не удалось загрузить курс. Проверьте связь и обновите страницу.</p>
+        <p className="muted">{String(error?.message ?? error)}</p>
+      </div>
+    )
+
+  const course = content.courses[0]
+  const lessons = course.lessons ?? []
+  const xpLevels = Object.values(course.levelXp)
   const index = lessons.findIndex((l) => l.id === lessonId)
   const lesson = lessons[index]
-  const totalXp = Object.values(progress).reduce((s, t) => s + (t.xp || 0), 0)
 
-  const setTaskState = (id, s) => setProgress((p) => ({ ...p, [id]: { ...emptyTaskState, ...s } }))
-  // Ответы на вопросы в видео лежат там же, под ключом «quiz:<id урока>»
-  const setQuizAnswer = (id, i, a) =>
-    setProgress((p) => ({ ...p, [`quiz:${id}`]: { ...p[`quiz:${id}`], [i]: a } }))
   const reset = () => {
-    if (confirm('Сбросить весь прогресс и XP?')) setProgress({})
+    if (confirm('Сбросить весь прогресс и XP?')) actions.resetProgress(course.id)
   }
 
   return (
@@ -46,7 +51,7 @@ export default function App() {
             {course.title}
           </a>
           <button className="xp" onClick={() => setShowRules((v) => !v)} title="Как начисляется опыт">
-            {totalXp} XP <span className="xp__q">?</span>
+            {totalXp(progress)} XP <span className="xp__q">?</span>
           </button>
         </div>
         {showRules && (
@@ -69,17 +74,14 @@ export default function App() {
         {lesson ? (
           <Lesson
             key={lesson.id}
+            course={course}
             lesson={lesson}
             number={index + 1}
             prev={lessons[index - 1]}
             next={lessons[index + 1]}
-            progress={progress}
-            setTaskState={setTaskState}
-            quizState={progress[`quiz:${lesson.id}`]}
-            onQuizAnswer={(i, a) => setQuizAnswer(lesson.id, i, a)}
           />
         ) : (
-          <LessonList progress={progress} onReset={reset} />
+          <LessonList course={course} progress={progress.courses[course.id]} onReset={reset} />
         )}
       </div>
     </>

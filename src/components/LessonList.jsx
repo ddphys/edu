@@ -1,10 +1,12 @@
-import { course, lessons } from '../data/course.js'
 import { allTasks } from '../lib.js'
 
-const solvedOf = (l, p) => allTasks(l).filter((t) => p[t.id]?.status === 'correct').length
+const solvedOf = (l, tasks) => allTasks(l).filter((t) => tasks[t.id]?.status === 'correct').length
 
-export default function LessonList({ progress, onReset }) {
-  const hasProgress = Object.keys(progress).length > 0
+// Страница курса: описание и список уроков. progress — сохранённый прогресс по этому курсу.
+export default function LessonList({ course, progress, onReset }) {
+  const lessons = course.lessons ?? []
+  const tasks = progress?.tasks ?? {}
+  const hasProgress = Object.keys(tasks).length > 0 || Object.keys(progress?.quiz ?? {}).length > 0
 
   return (
     <>
@@ -14,11 +16,11 @@ export default function LessonList({ progress, onReset }) {
         <p className="hero__about">{course.about}</p>
         <div className="teacher">
           <div className="teacher__photo">
-            {course.teacher.photo ? <img src={course.teacher.photo} alt="" /> : course.teacher.name[0]}
+            {course.teacher?.photo ? <img src={course.teacher.photo} alt="" /> : (course.teacher?.name ?? '?')[0]}
           </div>
           <div>
             <div className="muted">Преподаватель</div>
-            {course.teacher.name}
+            {course.teacher?.name}
           </div>
         </div>
       </section>
@@ -26,7 +28,7 @@ export default function LessonList({ progress, onReset }) {
       <h2 className="list-title">Уроки</h2>
       <nav className="lessons">
         {lessons.map((l, i) => {
-          const solved = solvedOf(l, progress)
+          const solved = solvedOf(l, tasks)
           const total = allTasks(l).length
           return (
             <a key={l.id} className="lesson-row" href={`#/lesson/${l.id}`}>

@@ -7,7 +7,8 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "test": "vitest run"
+    "test": "vitest run",
+    "check": "node scripts/content-fs.js"
   },
   "dependencies": {
     "katex": "^0.19.1",

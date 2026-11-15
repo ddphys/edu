@@ -1,7 +1,8 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import Video from './Video.jsx'
 import Task from './Task.jsx'
-import { allTasks, emptyTaskState } from '../lib.js'
+import { allTasks, isGroup, normalizeState } from '../lib.js'
+import { useStore } from '../store.jsx'
 
 const STATUS = {
   pending: ['gray', 'ждёт решения'],
@@ -11,7 +12,7 @@ const STATUS = {
 }
 
 // Несколько задач в одной ячейке: сверху номера, ниже выбранная задача
-function TaskGroup({ group, firstNumber, st, setTaskState }) {
+function TaskGroup({ group, firstNumber, st, taskProps }) {
   // Открываем первую ещё не решённую задачу
   const [active, setActive] = useState(() => {
     const i = group.tasks.findIndex((t) => st(t).status === 'pending')
@@ -41,10 +42,8 @@ function TaskGroup({ group, firstNumber, st, setTaskState }) {
       </div>
       <Task
         key={task.id}
-        task={task}
+        {...taskProps(task)}
         index={firstNumber + active - 1}
-        state={st(task)}
-        onChange={(s) => setTaskState(task.id, s)}
         hasNext={active < group.tasks.length - 1}
         onNext={() => setActive(active + 1)}
       />
@@ -52,11 +51,39 @@ function TaskGroup({ group, firstNumber, st, setTaskState }) {
   )
 }
 
-export default function Lesson({ lesson, number, prev, next, progress, setTaskState, quizState, onQuizAnswer }) {
-  const st = (t) => progress[t.id] || emptyTaskState
+// course и lesson — открытая часть контента; прогресс и действия берутся из общего состояния
+export default function Lesson({ course, lesson, number, prev, next }) {
+  const { progress, actions, revealedOf } = useStore()
+  const saved = progress.courses[course.id]
+  const st = (t) => normalizeState(saved?.tasks?.[t.id])
   const tasks = allTasks(lesson)
-  const xpEarned = tasks.reduce((s, t) => s + st(t).xp, 0)
+  const xpEarned = tasks.reduce((s, t) => s + (st(t).xp || 0), 0)
   const solved = tasks.filter((t) => st(t).status === 'correct').length
+
+  // Открытые подсказки и разборы уже начатых задач приходят отдельным запросом
+  const [ready, setReady] = useState(false)
+  useEffect(() => {
+    let alive = true
+    actions
+      .loadRevealed(course.id, allTasks(lesson).map((t) => t.id))
+      .catch(() => {})
+      .then(() => alive && setReady(true))
+    return () => {
+      alive = false
+    }
+  }, [actions, course.id, lesson])
+
+  const taskProps = (task) => ({
+    course,
+    task,
+    state: st(task),
+    revealed: revealedOf(course.id, task.id),
+    actions: {
+      submit: (input) => actions.submitAnswer(course.id, task.id, input),
+      hint: () => actions.takeHint(course.id, task.id),
+      skip: () => actions.skipTask(course.id, task.id),
+    },
+  })
 
   // Сквозная нумерация задач по всему уроку
   let count = 0
@@ -84,12 +111,13 @@ export default function Lesson({ lesson, number, prev, next, progress, setTaskSt
           title={lesson.title}
           vertical={lesson.videoVertical}
           quiz={lesson.quiz}
-          quizState={quizState}
-          onQuizAnswer={onQuizAnswer}
+          quizState={saved?.quiz?.[lesson.id]}
+          onQuizAnswer={(i, choice, options) => actions.answerQuiz(course.id, lesson.id, i, choice, options)}
+          onQuizSkipRetry={(i) => actions.skipQuizRetry(course.id, lesson.id, i)}
         />
       </section>
 
-      {tasks.length > 0 && (
+      {tasks.length > 0 && ready && (
         <section className="section" id="homework">
           <div className="hw-head">
             <h2 className="section-title">Домашнее задание</h2>
@@ -101,7 +129,7 @@ export default function Lesson({ lesson, number, prev, next, progress, setTaskSt
           <div className="hw">
             {lesson.tasks.map((item) => {
               const first = count + 1
-              if (Array.isArray(item.tasks)) {
+              if (isGroup(item)) {
                 if (item.tasks.length === 0) return null
                 count += item.tasks.length
                 return (
@@ -110,20 +138,14 @@ export default function Lesson({ lesson, number, prev, next, progress, setTaskSt
                     group={item}
                     firstNumber={first}
                     st={st}
-                    setTaskState={setTaskState}
+                    taskProps={taskProps}
                   />
                 )
               }
               count += 1
               return (
                 <div className="card" key={item.id}>
-                  <Task
-                    task={item}
-                    index={first - 1}
-                    state={st(item)}
-                    onChange={(s) => setTaskState(item.id, s)}
-                    hasNext={false}
-                  />
+                  <Task {...taskProps(item)} index={first - 1} hasNext={false} />
                 </div>
               )
             })}
