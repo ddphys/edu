@@ -15,7 +15,7 @@
 }
 * { box-sizing: border-box; }
 body { margin: 0; background: var(--bg); color: var(--text); font: 16px/1.5 system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; }
-button { font: inherit; cursor: pointer; }
+button { font: inherit; cursor: pointer; -webkit-tap-highlight-color: transparent; }
 h1, h2, h3 { margin: 0; }
 .muted { color: var(--muted); font-size: 14px; }
 a { color: inherit; text-decoration: none; }
@@ -63,16 +63,26 @@ a { color: inherit; text-decoration: none; }
 .section { margin-top: 56px; }
 .section-title { font-size: 22px; margin-bottom: 18px; }
 
+.video { border-radius: 12px; overflow: hidden; background: #111; }
 /* Видео и вопрос лежат в одной ячейке сетки: если вопрос выше видео (на телефоне), блок растягивается */
-.video { display: grid; border-radius: 12px; overflow: hidden; background: #111; }
-.video > * { grid-area: 1 / 1; min-width: 0; }
+.video__stage { display: grid; }
+.video__stage > * { grid-area: 1 / 1; min-width: 0; }
 .video__frame { position: relative; aspect-ratio: 16/9; align-self: start; }
 .video--vertical { max-width: 360px; margin: 0 auto; }
 .video--vertical .video__frame { aspect-ratio: 9/16; }
-.video__frame iframe, .video__frame video, .video__host, .video__host iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
-.video--empty { aspect-ratio: 16/9; place-items: center; text-align: center; color: #ccc; padding: 24px; }
+.video__frame iframe, .video__frame video { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
+.video--empty { display: grid; aspect-ratio: 16/9; place-items: center; text-align: center; color: #ccc; padding: 24px; }
 .video--empty code { background: #2c2c34; padding: 1px 6px; border-radius: 6px; }
-.video__note { color: var(--muted); font-size: 14px; margin-top: 12px; }
+
+.video__bar { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 4px 6px 4px 16px; color: #b9bcc8; font-size: 14px; }
+.video__bar button { flex: none; display: inline-flex; align-items: center; gap: 8px; min-height: 40px; padding: 0 12px; background: none; border: 0; border-radius: 8px; color: #fff; font-size: 14px; }
+.video__bar button:hover { background: rgba(255, 255, 255, .12); }
+
+/* Наш полноэкранный режим: разворачивается весь блок, поэтому вопрос виден поверх видео */
+.video.is-fs { position: fixed; inset: 0; z-index: 100; max-width: none; margin: 0; border-radius: 0; display: flex; flex-direction: column; }
+.video.is-fs .video__stage { flex: 1; min-height: 0; grid-template-rows: minmax(0, 1fr); }
+.video.is-fs .video__frame { aspect-ratio: auto; align-self: stretch; }
+.video.is-fs .video__quiz { overflow-y: auto; }
 
 .video__quiz { z-index: 1; background: rgba(17, 17, 17, .82); display: grid; place-items: center; padding: 24px; }
 .quiz { background: var(--card); border-radius: var(--radius); padding: 28px 32px; width: 100%; max-width: 560px; }
@@ -80,15 +90,32 @@ a { color: inherit; text-decoration: none; }
 .quiz__question { font-size: 17px; font-weight: 600; line-height: 1.5; }
 .quiz p { margin: 0; }
 .quiz__options { display: grid; gap: 8px; margin: 18px 0 0; }
-.quiz__option { text-align: left; background: #fff; color: var(--text); border: 1px solid #dcdde5; border-radius: 10px; padding: 12px 16px; }
+.quiz__option { text-align: left; min-height: 48px; background: #fff; color: var(--text); border: 1px solid #dcdde5; border-radius: 10px; padding: 10px 16px; }
 .quiz__option:not(:disabled):hover { border-color: var(--accent); background: var(--accent-soft); }
 .quiz__option:disabled { cursor: default; }
 .quiz__option.is-right { background: var(--green-bg); border-color: var(--green); }
 .quiz__option.is-wrong { background: var(--red-bg); border-color: #ffc3b9; }
 .quiz__result { margin-top: 16px; font-size: 15px; }
 .quiz__result.is-ok b { color: #3f8a2e; } .quiz__result.is-bad b { color: var(--red); }
+.quiz__result .math { margin-top: 4px; }
 .quiz__actions { margin-top: 20px; }
-.quiz__actions .link-btn { margin-top: 0; }
+.quiz__actions .link-btn { margin-top: 0; padding: 8px 0; }
+
+/* Телефон в альбомной ориентации: мало высоты — варианты в два столбца, всё плотнее */
+@media (orientation: landscape) and (max-height: 520px) {
+  .video__quiz { padding: 10px; place-items: start center; }
+  .quiz { max-width: 720px; padding: 14px 18px; }
+  .quiz__head { margin-bottom: 4px; font-size: 13px; }
+  .quiz__question { font-size: 15px; line-height: 1.35; }
+  .quiz__options { grid-template-columns: 1fr 1fr; margin-top: 10px; }
+  .quiz__option { min-height: 44px; padding: 8px 12px; font-size: 15px; }
+  .quiz__result { margin-top: 10px; font-size: 14px; }
+  .quiz__actions { margin-top: 10px; }
+  .quiz__actions .btn { padding: 9px 20px; }
+  .video.is-fs .video__bar span { display: none; }
+  .video.is-fs .video__bar { justify-content: flex-end; padding: 0 6px; }
+  .video.is-fs .video__bar button { min-height: 34px; }
+}
 
 .hw-head { display: flex; justify-content: space-between; align-items: baseline; gap: 16px; }
 .hw-head__stat { color: var(--muted); white-space: nowrap; }
@@ -171,6 +198,9 @@ a { color: inherit; text-decoration: none; }
   .hw { gap: 14px; }
   .video__quiz { padding: 12px; }
   .quiz { padding: 20px; }
+  .quiz__actions .btn { width: 100%; }
+  .video__bar { padding-left: 12px; font-size: 13px; }
+  .video__bar button { font-size: 13px; padding: 0 8px; }
   .lesson-nav { grid-template-columns: 1fr; }
   .lesson-nav__next { text-align: left; }
   .lesson-nav span:empty { display: none; }
