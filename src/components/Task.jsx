@@ -68,9 +68,8 @@ export default function Task({ task, index, state, onChange, onNext, hasNext }) 
 
   return (
     <div className="task">
-      <div className="task__head">
-        Задача {index + 1} · {task.title}
-      </div>
+      <div className="task__head">Задача {index + 1}</div>
+      <h3 className="task__title">{task.title}</h3>
       <MathText text={task.text} className="task__text" />
 
       <form id={`f-${task.id}`} onSubmit={submit} className={multi ? 'parts' : 'answers'}>
@@ -100,7 +99,6 @@ export default function Task({ task, index, state, onChange, onNext, hasNext }) 
               <label>
                 <span>Ваш ответ:</span>
                 <input
-                  autoFocus={!done}
                   inputMode="decimal"
                   className={cls(i)}
                   readOnly={done}
