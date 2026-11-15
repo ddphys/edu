@@ -33,14 +33,30 @@ export function parseVideo(input) {
 // В списке задач урока могут стоять отдельные задачи и группы { title, tasks: [...] }.
 // Эта функция возвращает все задачи урока одним плоским списком.
 export function allTasks(lesson) {
-  return lesson.tasks.flatMap((t) => (Array.isArray(t.tasks) ? t.tasks : [t]))
+  return (lesson.tasks ?? []).flatMap((t) => (Array.isArray(t.tasks) ? t.tasks : [t]))
 }
 
 // ---------- Проверка ответа ----------
+// Понимает число так, как его набирают люди:
+//   пробелы (в том числе неразрывные) не учитываются — « 1 000 », «- 6»;
+//   дефис, минус и тире — один и тот же знак: -6, −6, –6, —6;
+//   точка и запятая равнозначны: 2.5 и 2,5.
+// Всё, что не число («8 м/с», «abc», «1e3»), даёт null.
 export function parseNumber(s) {
-  const n = Number(String(s).trim().replace(/\s+/g, '').replace(',', '.').replace('−', '-'))
-  return Number.isFinite(n) ? n : null
+  const t = String(s ?? '')
+    .replace(/\s/g, '')
+    .replace(/[\u2010-\u2015\u2212\uFE58\uFE63\uFF0D]/g, '-')
+    .replace(/[,\uFF0C]/g, '.')
+  if (!/^[+-]?(\d+\.?\d*|\.\d+)$/.test(t)) return null
+  return Number(t)
 }
+
+// На айфоне у цифровой клавиатуры нет минуса, поэтому там открываем обычную
+export const answerInputMode =
+  typeof navigator !== 'undefined' &&
+  (/iP(hone|ad|od)/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1))
+    ? 'text'
+    : 'decimal'
 
 // У задачи может быть одно поле ответа (answer) или несколько (parts).
 // Внутри всё приводится к списку полей.

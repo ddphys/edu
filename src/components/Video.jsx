@@ -207,7 +207,7 @@ export default function Video({ url, title, vertical = false, quiz = [], quizSta
   const endedAt = useRef(0)
   // Вопрос по ходу видео: номер вопроса или null
   const [active, setActive] = useState(null)
-  // Повтор в конце видео: { queue: номера вопросов, pos, fresh: ответил ли уже в этом повторе, right }
+  // Повтор в конце видео: { queue: номера вопросов, pos, fresh: ответил ли уже в этом повторе }
   const [review, setReview] = useState(null)
   // Наш полноэкранный режим: 'native' — средствами браузера, 'css' — растянутый блок (айфон)
   const [fs, setFs] = useState(null)
@@ -292,10 +292,10 @@ export default function Video({ url, title, vertical = false, quiz = [], quizSta
   function onEnded() {
     if (!hasQuiz || review || Date.now() - endedAt.current < 2000) return
     endedAt.current = Date.now()
-    const queue = quiz.map((_, i) => i).filter((i) => !isAnswered(i) || (!quizState[i].ok && !quizState[i].retried))
+    const queue = quiz.map((_, i) => i).filter((i) => !quizState[i]?.retried && !quizState[i]?.ok)
     if (queue.length === 0) return
     setActive(null)
-    setReview({ queue, pos: 0, fresh: false, right: 0 })
+    setReview({ queue, pos: 0, fresh: false })
   }
 
   function closeActive() {
@@ -313,7 +313,7 @@ export default function Video({ url, title, vertical = false, quiz = [], quizSta
         quiz={quiz[active]}
         head={`Вопрос ${active + 1} из ${quiz.length} · ${fmtTime(quiz[active].time)}`}
         saved={quizState[active]}
-        onAnswer={(choice) => onQuizAnswer(active, { choice, ok: choice === quiz[active].correct })}
+        onAnswer={(choice) => onQuizAnswer(active, { ...quizState[active], choice, ok: choice === quiz[active].correct })}
         onSkip={closeActive}
         onContinue={closeActive}
         continueLabel="Продолжить просмотр"
@@ -331,9 +331,13 @@ export default function Video({ url, title, vertical = false, quiz = [], quizSta
         onAnswer={(choice) => {
           const ok = choice === quiz[i].correct
           onQuizAnswer(i, { choice, ok, retried: true })
-          setReview((r) => ({ ...r, fresh: true, right: r.right + (ok ? 1 : 0) }))
+          setReview((r) => ({ ...r, fresh: true }))
         }}
-        onSkip={reviewNext}
+        onSkip={() => {
+          // Пропуск в повторе тоже считается: в конце видео вопрос задаётся один раз
+          onQuizAnswer(i, { ...quizState[i], retried: true })
+          reviewNext()
+        }}
         onContinue={reviewNext}
         continueLabel={last ? 'Готово' : 'Следующий вопрос'}
       />
