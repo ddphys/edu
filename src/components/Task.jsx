@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import MathText from './Math.jsx'
 import {
+  answerInputMode,
   calcXp,
   cooldownAfter,
   errorCost,
@@ -9,6 +10,7 @@ import {
   hintCost,
   isCorrect,
   minXp,
+  parseNumber,
   plural,
   taskMaxXp,
 } from '../lib.js'
@@ -29,6 +31,7 @@ function xpBreakdown(task, hints, errors, xp) {
 
 export default function Task({ task, index, state, onChange, onNext, hasNext }) {
   const parts = getParts(task)
+  const hints = task.hints ?? []
   const multi = parts.length > 1
   const { status, hintsUsed } = state
   const errors = errorsOf(state)
@@ -55,10 +58,12 @@ export default function Task({ task, index, state, onChange, onNext, hasNext }) 
     if (after < before) setDelta({ value: before - after, key: Date.now() })
   }
 
-  const shownValue = (i) => (done ? (state.answers?.[i] ?? '') : okParts[i] ? fmt(parts[i].answer) : inputs[i])
+  // В старых сохранениях ответ лежал одной строкой в state.answer
+  const savedAnswer = (i) => state.answers?.[i] ?? (i === 0 ? state.answer : '') ?? ''
+  const shownValue = (i) => (done ? savedAnswer(i) : okParts[i] ? fmt(parts[i].answer) : inputs[i])
 
   function useHint() {
-    if (hintsUsed >= task.hints.length) return
+    if (hintsUsed >= hints.length) return
     showDelta(potential, calcXp(task, hintsUsed + 1, errors))
     onChange({ ...state, hintsUsed: hintsUsed + 1 })
   }
@@ -67,7 +72,10 @@ export default function Task({ task, index, state, onChange, onNext, hasNext }) 
     e.preventDefault()
     if (lockLeft > 0) return
     const open = parts.map((_, i) => i).filter((i) => !okParts[i])
-    if (open.some((i) => !inputs[i].trim())) return setMessage('Заполните все поля ответа')
+    if (open.some((i) => !inputs[i].trim())) return setMessage(multi ? 'Заполните все поля ответа' : 'Введите ответ')
+    // Не число — это опечатка, а не ошибка в решении: XP не снимаем
+    if (open.some((i) => parseNumber(inputs[i]) === null))
+      return setMessage('Ответ должен быть числом, например 12, −6 или 2,5 — без единиц измерения. XP за это не снимается.')
 
     const nowOk = parts.map((p, i) => okParts[i] || isCorrect(p, inputs[i]))
     const answers = parts.map((p, i) => (nowOk[i] ? fmt(p.answer) : inputs[i]))
@@ -92,14 +100,16 @@ export default function Task({ task, index, state, onChange, onNext, hasNext }) 
   }
 
   function skip() {
-    onChange({ ...state, status: 'skipped', xp: 0, lockUntil: 0 })
+    // Уже решённые поля остаются с верным ответом
+    const answers = parts.map((p, i) => (okParts[i] ? fmt(p.answer) : ''))
+    onChange({ ...state, status: 'skipped', answers, xp: 0, lockUntil: 0 })
     setConfirmSkip(false)
     setMessage('')
   }
 
   const cls = (i) => (done ? (okParts[i] ? 'ok' : 'bad') : okParts[i] ? 'ok' : '')
-  const shownHints = task.hints.slice(0, hintsUsed)
-  const hintsLeft = hintsUsed < task.hints.length
+  const shownHints = hints.slice(0, hintsUsed)
+  const hintsLeft = hintsUsed < hints.length
   const nextHintCost = potential - calcXp(task, hintsUsed + 1, errors)
   const nudge = errors > 0 && hintsLeft
 
@@ -127,11 +137,12 @@ export default function Task({ task, index, state, onChange, onNext, hasNext }) 
             <div className="part" key={i}>
               <span className="part__label">{p.label}</span>
               <input
-                inputMode="decimal"
+                inputMode={answerInputMode}
+                autoComplete="off"
                 className={cls(i)}
                 readOnly={done || okParts[i]}
                 value={shownValue(i)}
-                placeholder={done ? 'Вы не указали этот ответ' : 'Введите число'}
+                placeholder={done ? 'Нет ответа' : 'Введите число'}
                 onChange={(e) => {
                   setInputs(inputs.map((v, k) => (k === i ? e.target.value : v)))
                   setMessage('')
@@ -148,7 +159,8 @@ export default function Task({ task, index, state, onChange, onNext, hasNext }) 
               <label>
                 <span>Ваш ответ:</span>
                 <input
-                  inputMode="decimal"
+                  inputMode={answerInputMode}
+                  autoComplete="off"
                   className={cls(i)}
                   readOnly={done}
                   value={shownValue(i)}
@@ -175,13 +187,13 @@ export default function Task({ task, index, state, onChange, onNext, hasNext }) 
       {shownHints.map((h, i) => (
         <div className="hint" key={i}>
           <div className="hint__title">
-            Подсказка {task.hints.length > 1 ? `${i + 1} из ${task.hints.length}` : ''}
+            Подсказка {hints.length > 1 ? `${i + 1} из ${hints.length}` : ''}
           </div>
           <MathText text={h} />
         </div>
       ))}
 
-      {done && (
+      {done && task.solution && (
         <div className="solution">
           <div className="solution__title">Решение задачи:</div>
           <MathText text={task.solution} />
@@ -205,16 +217,18 @@ export default function Task({ task, index, state, onChange, onNext, hasNext }) 
       {!done && !confirmSkip && (
         <div className="actions">
           <div className="actions__btns">
-            <button
-              type="button"
-              className={`btn btn--ghost ${nudge ? 'btn--nudge' : ''}`}
-              onClick={useHint}
-              disabled={!hintsLeft}
-            >
-              {!hintsLeft
-                ? 'Подсказки закончились'
-                : `${nudge ? 'Застряли? ' : ''}Подсказка${nextHintCost > 0 ? ` −${nextHintCost} XP` : ''}`}
-            </button>
+            {hints.length > 0 && (
+              <button
+                type="button"
+                className={`btn btn--ghost ${nudge ? 'btn--nudge' : ''}`}
+                onClick={useHint}
+                disabled={!hintsLeft}
+              >
+                {!hintsLeft
+                  ? 'Подсказки закончились'
+                  : `${nudge ? 'Застряли? ' : ''}Подсказка${nextHintCost > 0 ? ` −${nextHintCost} XP` : ''}`}
+              </button>
+            )}
             <button type="button" className="btn btn--ghost" onClick={() => setConfirmSkip(true)}>
               Я не знаю
             </button>

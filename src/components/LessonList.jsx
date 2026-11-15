@@ -36,15 +36,21 @@ export default function LessonList({ progress, onReset }) {
                   {l.title}
                   {l.free && <span className="tag">Бесплатно</span>}
                 </span>
-                <span className="lesson-row__desc">{l.description.join(' · ')}</span>
+                <span className="lesson-row__desc">{(l.description ?? []).join(' · ')}</span>
               </span>
               <span className="lesson-row__progress">
-                <span className={solved === total ? 'is-done' : ''}>
-                  {solved} из {total} задач
-                </span>
-                <span className="bar">
-                  <span style={{ width: `${(solved / total) * 100}%` }} />
-                </span>
+                {total > 0 ? (
+                  <>
+                    <span className={solved === total ? 'is-done' : ''}>
+                      {solved} из {total} задач
+                    </span>
+                    <span className="bar">
+                      <span style={{ width: `${(solved / total) * 100}%` }} />
+                    </span>
+                  </>
+                ) : (
+                  <span>Без задач</span>
+                )}
               </span>
               <span className="lesson-row__arrow" aria-hidden="true">
                 →

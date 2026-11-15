@@ -24,7 +24,7 @@ function TaskGroup({ group, firstNumber, st, setTaskState }) {
       {group.title && <div className="group-title">{group.title}</div>}
       <div className="steps" role="tablist" aria-label={group.title || 'Задачи'}>
         {group.tasks.map((t, i) => {
-          const [color, label] = STATUS[st(t).status]
+          const [color, label] = STATUS[st(t).status] ?? STATUS.pending
           return (
             <button
               key={t.id}
@@ -71,7 +71,7 @@ export default function Lesson({ lesson, number, prev, next, progress, setTaskSt
         <div className="muted">Урок {number}</div>
         <h1>{lesson.title}</h1>
         <ul className="bullets">
-          {lesson.description.map((d) => (
+          {(lesson.description ?? []).map((d) => (
             <li key={d}>{d}</li>
           ))}
         </ul>
@@ -89,44 +89,47 @@ export default function Lesson({ lesson, number, prev, next, progress, setTaskSt
         />
       </section>
 
-      <section className="section" id="homework">
-        <div className="hw-head">
-          <h2 className="section-title">Домашнее задание</h2>
-          <div className="hw-head__stat">
-            Решено {solved} из {tasks.length} · <b>{xpEarned} XP</b>
+      {tasks.length > 0 && (
+        <section className="section" id="homework">
+          <div className="hw-head">
+            <h2 className="section-title">Домашнее задание</h2>
+            <div className="hw-head__stat">
+              Решено {solved} из {tasks.length} · <b>{xpEarned} XP</b>
+            </div>
           </div>
-        </div>
 
-        <div className="hw">
-          {lesson.tasks.map((item) => {
-            const first = count + 1
-            if (Array.isArray(item.tasks)) {
-              count += item.tasks.length
+          <div className="hw">
+            {lesson.tasks.map((item) => {
+              const first = count + 1
+              if (Array.isArray(item.tasks)) {
+                if (item.tasks.length === 0) return null
+                count += item.tasks.length
+                return (
+                  <TaskGroup
+                    key={item.tasks[0].id}
+                    group={item}
+                    firstNumber={first}
+                    st={st}
+                    setTaskState={setTaskState}
+                  />
+                )
+              }
+              count += 1
               return (
-                <TaskGroup
-                  key={item.tasks[0].id}
-                  group={item}
-                  firstNumber={first}
-                  st={st}
-                  setTaskState={setTaskState}
-                />
+                <div className="card" key={item.id}>
+                  <Task
+                    task={item}
+                    index={first - 1}
+                    state={st(item)}
+                    onChange={(s) => setTaskState(item.id, s)}
+                    hasNext={false}
+                  />
+                </div>
               )
-            }
-            count += 1
-            return (
-              <div className="card" key={item.id}>
-                <Task
-                  task={item}
-                  index={first - 1}
-                  state={st(item)}
-                  onChange={(s) => setTaskState(item.id, s)}
-                  hasNext={false}
-                />
-              </div>
-            )
-          })}
-        </div>
-      </section>
+            })}
+          </div>
+        </section>
+      )}
 
       <nav className="lesson-nav">
         {prev ? (
