@@ -1,13 +1,37 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import MathText from './Math.jsx'
-import { calcXp, getParts, isCorrect, maxAttempts, taskMaxXp } from '../lib.js'
+import {
+  calcXp,
+  cooldownAfter,
+  errorCost,
+  errorsOf,
+  getParts,
+  hintCost,
+  isCorrect,
+  minXp,
+  plural,
+  taskMaxXp,
+} from '../lib.js'
 
 const fmt = (n) => String(n).replace('.', ',')
+
+// «20 − 5 за подсказку − 8 за 2 ошибки» — откуда взялось итоговое XP
+function xpBreakdown(task, hints, errors, xp) {
+  if (!hints && !errors) return 'Без ошибок и подсказок — максимум'
+  const items = [`${taskMaxXp(task)}`]
+  if (hints) items.push(`− ${hints * hintCost(task)} за ${hints > 1 ? hints + ' ' : ''}${plural(hints, 'подсказку', 'подсказки', 'подсказок')}`)
+  if (errors) items.push(`− ${errors * errorCost(task)} за ${errors > 1 ? errors + ' ' : ''}${plural(errors, 'ошибку', 'ошибки', 'ошибок')}`)
+  let line = items.join(' ')
+  if (xp === minXp(task) && taskMaxXp(task) - hints * hintCost(task) - errors * errorCost(task) < xp)
+    line += ` · но не меньше ${xp} XP, раз решили сами`
+  return line
+}
 
 export default function Task({ task, index, state, onChange, onNext, hasNext }) {
   const parts = getParts(task)
   const multi = parts.length > 1
-  const { status, attempts, hintsUsed } = state
+  const { status, hintsUsed } = state
+  const errors = errorsOf(state)
   const okParts = state.okParts || []
   const done = status !== 'pending'
 
@@ -15,60 +39,85 @@ export default function Task({ task, index, state, onChange, onNext, hasNext }) 
   const [inputs, setInputs] = useState(() => parts.map(() => ''))
   const [confirmSkip, setConfirmSkip] = useState(false)
   const [message, setMessage] = useState('')
+  const [delta, setDelta] = useState(null) // всплывающее «−4» у плашки XP
+
+  // Пауза от перебора: тикаем раз в секунду, пока она идёт
+  const [now, setNow] = useState(Date.now)
+  const lockLeft = Math.max(0, Math.ceil(((state.lockUntil || 0) - now) / 1000))
+  useEffect(() => {
+    if (!state.lockUntil || state.lockUntil <= Date.now()) return
+    const id = setInterval(() => setNow(Date.now()), 250)
+    return () => clearInterval(id)
+  }, [state.lockUntil])
+
+  const potential = calcXp(task, hintsUsed, errors)
+  const showDelta = (before, after) => {
+    if (after < before) setDelta({ value: before - after, key: Date.now() })
+  }
 
   const shownValue = (i) => (done ? (state.answers?.[i] ?? '') : okParts[i] ? fmt(parts[i].answer) : inputs[i])
 
   function useHint() {
-    if (hintsUsed < task.hints.length) onChange({ ...state, hintsUsed: hintsUsed + 1 })
+    if (hintsUsed >= task.hints.length) return
+    showDelta(potential, calcXp(task, hintsUsed + 1, errors))
+    onChange({ ...state, hintsUsed: hintsUsed + 1 })
   }
 
   function submit(e) {
     e.preventDefault()
+    if (lockLeft > 0) return
     const open = parts.map((_, i) => i).filter((i) => !okParts[i])
     if (open.some((i) => !inputs[i].trim())) return setMessage('Заполните все поля ответа')
 
-    const attemptNumber = attempts + 1
     const nowOk = parts.map((p, i) => okParts[i] || isCorrect(p, inputs[i]))
     const answers = parts.map((p, i) => (nowOk[i] ? fmt(p.answer) : inputs[i]))
 
     if (nowOk.every(Boolean)) {
-      onChange({
-        ...state,
-        status: 'correct',
-        attempts: attemptNumber,
-        answers,
-        okParts: nowOk,
-        xp: calcXp(task, hintsUsed, attemptNumber),
-      })
+      onChange({ ...state, status: 'correct', errors, answers, okParts: nowOk, xp: potential, lockUntil: 0 })
       setMessage('')
-    } else if (attemptNumber >= maxAttempts) {
-      onChange({ ...state, status: 'wrong', attempts: attemptNumber, answers, okParts: nowOk, xp: 0 })
-      setMessage('')
-    } else {
-      onChange({ ...state, attempts: attemptNumber, okParts: nowOk })
-      const left = maxAttempts - attemptNumber
-      const wrongCount = nowOk.filter((v) => !v).length
-      const now = calcXp(task, hintsUsed, attemptNumber + 1)
-      setMessage(
-        `${multi ? `Неверных ответов: ${wrongCount}. ` : 'Неверно. '}Осталось попыток: ${left}. Теперь за верное решение: ${now} XP`,
-      )
-      setInputs(parts.map(() => ''))
+      return
     }
+
+    // Ошибка: одна на отправку, сколько бы полей ни было неверно
+    const nextErrors = errors + 1
+    const next = calcXp(task, hintsUsed, nextErrors)
+    const pause = cooldownAfter(nextErrors)
+    onChange({ ...state, errors: nextErrors, okParts: nowOk, lockUntil: pause ? Date.now() + pause : 0 })
+    setNow(Date.now())
+    showDelta(potential, next)
+    const wrongCount = nowOk.filter((v) => !v).length
+    const what = multi ? `Неверных ответов: ${wrongCount}` : 'Неверно'
+    setMessage(next < potential ? `${what}, −${potential - next} XP. Попробуйте ещё раз.` : `${what}. Попробуйте ещё раз.`)
+    setInputs(parts.map(() => ''))
   }
 
   function skip() {
-    onChange({ ...state, status: 'skipped', xp: 0 })
+    onChange({ ...state, status: 'skipped', xp: 0, lockUntil: 0 })
     setConfirmSkip(false)
     setMessage('')
   }
 
   const cls = (i) => (done ? (okParts[i] ? 'ok' : 'bad') : okParts[i] ? 'ok' : '')
-  const potential = calcXp(task, hintsUsed, attempts + 1)
   const shownHints = task.hints.slice(0, hintsUsed)
+  const hintsLeft = hintsUsed < task.hints.length
+  const nextHintCost = potential - calcXp(task, hintsUsed + 1, errors)
+  const nudge = errors > 0 && hintsLeft
 
   return (
     <div className="task">
-      <div className="task__head">Задача {index + 1}</div>
+      <div className="task__head">
+        <span>Задача {index + 1}</span>
+        {!done && (
+          <span className="xp-pill" title={`Максимум за задачу — ${taskMaxXp(task)} XP`}>
+            {potential} XP
+            {delta && (
+              <span className="xp-pill__delta" key={delta.key} onAnimationEnd={() => setDelta(null)}>
+                −{delta.value}
+              </span>
+            )}
+          </span>
+        )}
+      </div>
       <h3 className="task__title">{task.title}</h3>
       <MathText text={task.text} className="task__text" />
 
@@ -116,6 +165,12 @@ export default function Task({ task, index, state, onChange, onNext, hasNext }) 
       </form>
 
       {message && !done && <div className="msg">{message}</div>}
+      {!done && lockLeft > 0 && (
+        <div className="msg msg--pause">
+          Сделайте паузу и перепроверьте решение{hintsLeft ? ' — или возьмите подсказку' : ''}. Ответить можно
+          через {lockLeft}{'\u00a0'}с.
+        </div>
+      )}
 
       {shownHints.map((h, i) => (
         <div className="hint" key={i}>
@@ -149,26 +204,22 @@ export default function Task({ task, index, state, onChange, onNext, hasNext }) 
 
       {!done && !confirmSkip && (
         <div className="actions">
-          <div className="actions__meta">
-            Попытка {attempts + 1} из {maxAttempts} · Подсказок: {hintsUsed} из {task.hints.length}
-            <br />
-            За верное решение сейчас: <b>{potential} XP</b>
-            {potential < taskMaxXp(task) && <> (максимум {taskMaxXp(task)})</>}
-          </div>
           <div className="actions__btns">
             <button
               type="button"
-              className="btn btn--ghost"
+              className={`btn btn--ghost ${nudge ? 'btn--nudge' : ''}`}
               onClick={useHint}
-              disabled={hintsUsed >= task.hints.length}
+              disabled={!hintsLeft}
             >
-              {hintsUsed >= task.hints.length ? 'Подсказки закончились' : 'Подсказка'}
+              {!hintsLeft
+                ? 'Подсказки закончились'
+                : `${nudge ? 'Застряли? ' : ''}Подсказка${nextHintCost > 0 ? ` −${nextHintCost} XP` : ''}`}
             </button>
             <button type="button" className="btn btn--ghost" onClick={() => setConfirmSkip(true)}>
               Я не знаю
             </button>
-            <button className="btn btn--primary" type="submit" form={`f-${task.id}`}>
-              Ответить
+            <button className="btn btn--primary" type="submit" form={`f-${task.id}`} disabled={lockLeft > 0}>
+              {lockLeft > 0 ? `Ответить (${lockLeft} с)` : 'Ответить'}
             </button>
           </div>
         </div>
@@ -184,9 +235,10 @@ export default function Task({ task, index, state, onChange, onNext, hasNext }) 
                   ? 'Задача не засчитана'
                   : 'Попытки закончились — задача не засчитана'}
             </div>
-            <div className="result__sub">
-              Попыток: {attempts} из {maxAttempts} · подсказок: {hintsUsed} из {task.hints.length}
-            </div>
+            {status === 'correct' && (
+              <div className="result__sub">{xpBreakdown(task, hintsUsed, errors, state.xp)}</div>
+            )}
+            {status === 'skipped' && <div className="result__sub">Ответ просмотрен — 0 XP</div>}
           </div>
           <div className="result__right">
             {status === 'correct' && <span className="result__xp">+ {state.xp} XP</span>}

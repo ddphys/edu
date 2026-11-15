@@ -6,11 +6,15 @@ import { emptyTaskState, loadProgress, saveProgress } from './lib.js'
 
 // Адрес страницы хранится в хэше: «#/» — список уроков, «#/lesson/l1» — урок.
 // Так работает кнопка «Назад» в браузере и ссылку на урок можно переслать.
+const pct = (x) => Math.round(x * 100) + '%'
+const xpLevels = Object.values(course.levelXp)
+
 const lessonIdFromHash = () => window.location.hash.match(/^#\/lesson\/(.+)$/)?.[1] ?? null
 
 export default function App() {
   const [progress, setProgress] = useState(loadProgress)
   const [lessonId, setLessonId] = useState(lessonIdFromHash)
+  const [showRules, setShowRules] = useState(false)
 
   useEffect(() => saveProgress(progress), [progress])
   useEffect(() => {
@@ -41,8 +45,24 @@ export default function App() {
           <a className="topbar__title" href="#/">
             {course.title}
           </a>
-          <span className="xp">{totalXp} XP</span>
+          <button className="xp" onClick={() => setShowRules((v) => !v)} title="Как начисляется опыт">
+            {totalXp} XP <span className="xp__q">?</span>
+          </button>
         </div>
+        {showRules && (
+          <div className="topbar__in">
+            <ul className="rules">
+              <li>
+                Задача стоит от {Math.min(...xpLevels)} до {Math.max(...xpLevels)} XP — чем сложнее, тем дороже.
+              </li>
+              <li>
+                Ошибка −{pct(course.errorPenalty)} цены, подсказка −{pct(course.hintPenalty)}. Решили сами — получите
+                не меньше {pct(course.minShare)}.
+              </li>
+              <li>«Я не знаю» открывает решение, но XP за задачу не будет.</li>
+            </ul>
+          </div>
+        )}
       </header>
 
       <div className="page">
