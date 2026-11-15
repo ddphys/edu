@@ -1,6 +1,7 @@
 import { course, lessons } from '../data/course.js'
+import { allTasks } from '../lib.js'
 
-const solvedOf = (l, p) => l.tasks.filter((t) => p[t.id]?.status === 'correct').length
+const solvedOf = (l, p) => allTasks(l).filter((t) => p[t.id]?.status === 'correct').length
 
 export default function LessonList({ progress, onReset }) {
   const hasProgress = Object.keys(progress).length > 0
@@ -26,7 +27,7 @@ export default function LessonList({ progress, onReset }) {
       <nav className="lessons">
         {lessons.map((l, i) => {
           const solved = solvedOf(l, progress)
-          const total = l.tasks.length
+          const total = allTasks(l).length
           return (
             <a key={l.id} className="lesson-row" href={`#/lesson/${l.id}`}>
               <span className="lesson-row__num">{i + 1}</span>

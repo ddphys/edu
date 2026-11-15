@@ -27,6 +27,9 @@ export default function App() {
   const totalXp = Object.values(progress).reduce((s, t) => s + (t.xp || 0), 0)
 
   const setTaskState = (id, s) => setProgress((p) => ({ ...p, [id]: { ...emptyTaskState, ...s } }))
+  // Ответы на вопросы в видео лежат там же, под ключом «quiz:<id урока>»
+  const setQuizAnswer = (id, i, a) =>
+    setProgress((p) => ({ ...p, [`quiz:${id}`]: { ...p[`quiz:${id}`], [i]: a } }))
   const reset = () => {
     if (confirm('Сбросить весь прогресс и XP?')) setProgress({})
   }
@@ -52,6 +55,8 @@ export default function App() {
             next={lessons[index + 1]}
             progress={progress}
             setTaskState={setTaskState}
+            quizState={progress[`quiz:${lesson.id}`]}
+            onQuizAnswer={(i, a) => setQuizAnswer(lesson.id, i, a)}
           />
         ) : (
           <LessonList progress={progress} onReset={reset} />
