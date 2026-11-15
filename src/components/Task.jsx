@@ -106,9 +106,7 @@ export default function Task({ task, index, state, onChange, onNext, hasNext }) 
   return (
     <div className="task">
       <div className="task__head">
-        <span>
-          Задача {index + 1} · {task.title}
-        </span>
+        <span>Задача {index + 1}</span>
         {!done && (
           <span className="xp-pill" title={`Максимум за задачу — ${taskMaxXp(task)} XP`}>
             {potential} XP
@@ -120,6 +118,7 @@ export default function Task({ task, index, state, onChange, onNext, hasNext }) 
           </span>
         )}
       </div>
+      <h3 className="task__title">{task.title}</h3>
       <MathText text={task.text} className="task__text" />
 
       <form id={`f-${task.id}`} onSubmit={submit} className={multi ? 'parts' : 'answers'}>
@@ -149,7 +148,6 @@ export default function Task({ task, index, state, onChange, onNext, hasNext }) 
               <label>
                 <span>Ваш ответ:</span>
                 <input
-                  autoFocus={!done}
                   inputMode="decimal"
                   className={cls(i)}
                   readOnly={done}
@@ -170,7 +168,7 @@ export default function Task({ task, index, state, onChange, onNext, hasNext }) 
       {!done && lockLeft > 0 && (
         <div className="msg msg--pause">
           Сделайте паузу и перепроверьте решение{hintsLeft ? ' — или возьмите подсказку' : ''}. Ответить можно
-          через {lockLeft} с.
+          через {lockLeft}{'\u00a0'}с.
         </div>
       )}
 

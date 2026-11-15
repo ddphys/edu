@@ -1,11 +1,39 @@
 import { course } from './data/course.js'
 
-// ---------- Rutube ----------
-// Принимает ссылку любого вида (video / play/embed) или просто id, возвращает ссылку для iframe.
-export function rutubeEmbedUrl(input) {
-  if (!input) return null
-  const m = String(input).match(/[0-9a-f]{32}/i)
-  return m ? `https://rutube.ru/play/embed/${m[0].toLowerCase()}` : null
+// ---------- Видео ----------
+// Принимает ссылку на видео и определяет платформу. Понимает:
+//   YouTube   — youtube.com/watch?v=…, youtu.be/…, /shorts/…, /embed/…, /live/…
+//   Rutube    — rutube.ru/video/…, rutube.ru/play/embed/… или просто id из 32 символов
+//   Kinescope — kinescope.io/… или kinescope.io/embed/…
+//   файл      — прямая ссылка на .mp4 / .webm / .m4v / .mov / .ogv
+// Возвращает { type, id, embed } для плееров и { type: 'file', src } для файла.
+export function parseVideo(input) {
+  const url = String(input ?? '').trim()
+  if (!url) return null
+
+  let m = url.match(/(?:youtu\.be\/|youtube(?:-nocookie)?\.com\/(?:watch\?(?:.*&)?v=|embed\/|shorts\/|live\/))([\w-]{11})/)
+  if (m) return { type: 'youtube', id: m[1], embed: `https://www.youtube.com/embed/${m[1]}?rel=0&playsinline=1` }
+
+  m = url.match(/kinescope\.io\/(?:embed\/)?([A-Za-z0-9]+)/)
+  if (m) return { type: 'kinescope', id: m[1], embed: `https://kinescope.io/embed/${m[1]}` }
+
+  if (/\.(mp4|webm|m4v|mov|ogv)([?#]|$)/i.test(url)) return { type: 'file', src: url }
+
+  m = url.match(/[0-9a-f]{32}/i)
+  if (m) {
+    const id = m[0].toLowerCase()
+    // У видео «по ссылке» есть ключ доступа ?p=…
+    const key = url.match(/[?&]p=([\w-]+)/)
+    return { type: 'rutube', id, embed: `https://rutube.ru/play/embed/${id}${key ? `/?p=${key[1]}` : ''}` }
+  }
+  return null
+}
+
+// ---------- Задачи урока ----------
+// В списке задач урока могут стоять отдельные задачи и группы { title, tasks: [...] }.
+// Эта функция возвращает все задачи урока одним плоским списком.
+export function allTasks(lesson) {
+  return lesson.tasks.flatMap((t) => (Array.isArray(t.tasks) ? t.tasks : [t]))
 }
 
 // ---------- Проверка ответа ----------

@@ -1,49 +1,57 @@
 import { useEffect, useState } from 'react'
 import { course, lessons } from './data/course.js'
 import Lesson from './components/Lesson.jsx'
+import LessonList from './components/LessonList.jsx'
 import { emptyTaskState, loadProgress, saveProgress } from './lib.js'
 
+// Адрес страницы хранится в хэше: «#/» — список уроков, «#/lesson/l1» — урок.
+// Так работает кнопка «Назад» в браузере и ссылку на урок можно переслать.
 const pct = (x) => Math.round(x * 100) + '%'
 const xpLevels = Object.values(course.levelXp)
 
-const solvedOf = (l, p) => l.tasks.filter((t) => p[t.id]?.status === 'correct').length
+const lessonIdFromHash = () => window.location.hash.match(/^#\/lesson\/(.+)$/)?.[1] ?? null
 
 export default function App() {
   const [progress, setProgress] = useState(loadProgress)
-  const [lessonId, setLessonId] = useState(lessons[0].id)
-  const [showAbout, setShowAbout] = useState(false)
+  const [lessonId, setLessonId] = useState(lessonIdFromHash)
   const [showRules, setShowRules] = useState(false)
 
   useEffect(() => saveProgress(progress), [progress])
+  useEffect(() => {
+    const onHash = () => {
+      setLessonId(lessonIdFromHash())
+      window.scrollTo(0, 0)
+    }
+    window.addEventListener('hashchange', onHash)
+    return () => window.removeEventListener('hashchange', onHash)
+  }, [])
 
-  const lesson = lessons.find((l) => l.id === lessonId)
+  const index = lessons.findIndex((l) => l.id === lessonId)
+  const lesson = lessons[index]
   const totalXp = Object.values(progress).reduce((s, t) => s + (t.xp || 0), 0)
 
   const setTaskState = (id, s) => setProgress((p) => ({ ...p, [id]: { ...emptyTaskState, ...s } }))
+  // Ответы на вопросы в видео лежат там же, под ключом «quiz:<id урока>»
+  const setQuizAnswer = (id, i, a) =>
+    setProgress((p) => ({ ...p, [`quiz:${id}`]: { ...p[`quiz:${id}`], [i]: a } }))
   const reset = () => {
     if (confirm('Сбросить весь прогресс и XP?')) setProgress({})
   }
 
   return (
-    <div className="page">
-      <header className="card course-head">
-        <div>
-          <div className="muted">{course.badge}</div>
-          <h1>{course.title}</h1>
-          <div className="chips">
-            <button className="chip" onClick={() => setShowAbout((v) => !v)}>
-              О курсе
-            </button>
-            <button className="chip" onClick={() => setShowRules((v) => !v)} title="Как начисляется опыт">
-              Опыт {totalXp} XP <span className="chip__q">?</span>
-            </button>
-            <button className="chip chip--link" onClick={reset}>
-              Сбросить прогресс
-            </button>
-          </div>
-          {showAbout && <p className="about">{course.about}</p>}
-          {showRules && (
-            <ul className="about rules">
+    <>
+      <header className="topbar">
+        <div className="topbar__in">
+          <a className="topbar__title" href="#/">
+            {course.title}
+          </a>
+          <button className="xp" onClick={() => setShowRules((v) => !v)} title="Как начисляется опыт">
+            {totalXp} XP <span className="xp__q">?</span>
+          </button>
+        </div>
+        {showRules && (
+          <div className="topbar__in">
+            <ul className="rules">
               <li>
                 Задача стоит от {Math.min(...xpLevels)} до {Math.max(...xpLevels)} XP — чем сложнее, тем дороже.
               </li>
@@ -53,39 +61,27 @@ export default function App() {
               </li>
               <li>«Я не знаю» открывает решение, но XP за задачу не будет.</li>
             </ul>
-          )}
-        </div>
-        <div className="teacher">
-          <span>{course.teacher.name}</span>
-          <div className="teacher__photo">
-            {course.teacher.photo ? <img src={course.teacher.photo} alt="" /> : course.teacher.name[0]}
           </div>
-        </div>
+        )}
       </header>
 
-      <div className="layout">
-        <nav className="card lessons">
-          {lessons.map((l, i) => (
-            <button
-              key={l.id}
-              className={`lessons__item ${l.id === lessonId ? 'is-active' : ''}`}
-              onClick={() => setLessonId(l.id)}
-            >
-              <span className="lessons__num">{i + 1}</span>
-              <span>
-                <span className="lessons__title">{l.title}</span>
-                <small>
-                  Решено задач: {solvedOf(l, progress)} из {l.tasks.length}
-                </small>
-                {l.free && <span className="tag">Бесплатно</span>}
-              </span>
-            </button>
-          ))}
-        </nav>
-        <main>
-          <Lesson key={lesson.id} lesson={lesson} progress={progress} setTaskState={setTaskState} />
-        </main>
+      <div className="page">
+        {lesson ? (
+          <Lesson
+            key={lesson.id}
+            lesson={lesson}
+            number={index + 1}
+            prev={lessons[index - 1]}
+            next={lessons[index + 1]}
+            progress={progress}
+            setTaskState={setTaskState}
+            quizState={progress[`quiz:${lesson.id}`]}
+            onQuizAnswer={(i, a) => setQuizAnswer(lesson.id, i, a)}
+          />
+        ) : (
+          <LessonList progress={progress} onReset={reset} />
+        )}
       </div>
-    </div>
+    </>
   )
 }
