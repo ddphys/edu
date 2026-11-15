@@ -1,0 +1,14 @@
+[Unit]
+Description=edu — сервер сайта
+After=network.target postgresql.service
+
+[Service]
+User=edu
+WorkingDirectory=/home/edu/edu/server
+ExecStart=/usr/bin/node --env-file=.env src/index.js
+Restart=always
+RestartSec=3
+Environment=NODE_ENV=production
+
+[Install]
+WantedBy=multi-user.target

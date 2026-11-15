@@ -37,9 +37,10 @@ export default async function adminStats(app) {
       WHERE l.course_id = ${courseId} ORDER BY l.position, l.id, lt.position`
     const taskIds = [...new Set(cols.map((c) => c.task_id))]
     const students = await sql`
-      SELECT u.id, u.first_name, u.last_name, u.email, u.note, i.label AS invite_label, u.last_seen_at,
+      SELECT u.id, u.first_name, u.last_name, u.email, u.note, u.last_seen_at,
+        (SELECT string_agg(iv.label, ', ' ORDER BY iu.created_at) FROM invite_uses iu JOIN invites iv ON iv.id = iu.invite_id WHERE iu.user_id = u.id) AS invite_label,
         EXISTS (SELECT 1 FROM enrollments e WHERE e.user_id = u.id AND e.course_id = ${courseId}) AS enrolled
-      FROM users u LEFT JOIN invites i ON i.id = u.invite_id
+      FROM users u
       WHERE u.role = 'student' AND (
         EXISTS (SELECT 1 FROM enrollments e WHERE e.user_id = u.id AND e.course_id = ${courseId})
         OR EXISTS (SELECT 1 FROM progress p WHERE p.user_id = u.id AND p.task_id = ANY(${taskIds}))

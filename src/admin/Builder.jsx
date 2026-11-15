@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom'
 import { api } from '../api.js'
 import TaskBank from './TaskBank.jsx'
 import TaskEditor from './TaskEditor.jsx'
+import CourseAccess from './CourseAccess.jsx'
 import { pct, useAction, useLoad } from './ui.jsx'
 
 // Конструктор: слева дерево курсов и уроков, в центре урок, справа банк задач.
@@ -324,6 +325,7 @@ function CoursePanel({ course, onChanged, onDeleted }) {
           ))}
         </tbody>
       </table>
+      <CourseAccess course={course} />
     </div>
   )
 }

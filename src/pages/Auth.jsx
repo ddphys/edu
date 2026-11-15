@@ -73,11 +73,21 @@ export function Register() {
   const [invite, setInvite] = useState(code ? 'checking' : null)
   const [open, setOpen] = useState(true)
 
-  useEffect(() => {
-    if (code) api.get(`/api/auth/invite/${encodeURIComponent(code)}`).then((r) => setInvite(r.valid ? 'ok' : 'bad')).catch(() => setInvite('bad'))
-    else api.get('/api/auth/config').then((r) => setOpen(r.openRegistration)).catch(() => {})
-  }, [code])
+  const [courses, setCourses] = useState([])
 
+  useEffect(() => {
+    if (code)
+      api
+        .get(`/api/auth/invite/${encodeURIComponent(code)}`)
+        .then((r) => {
+          setInvite(r.valid ? 'ok' : 'bad')
+          setCourses(r.courses || [])
+        })
+        .catch(() => setInvite('bad'))
+    else api.get('/api/auth/config').then((r) => setOpen(r.openRegistration)).catch(() => {})
+  }, [code, user])
+
+  if (user && code) return <AcceptInvite code={code} />
   if (user) return <Navigate to="/" replace />
 
   async function submit(e) {
@@ -114,6 +124,11 @@ export function Register() {
 
   return (
     <AuthCard title="Регистрация">
+      {code && courses.length > 0 && (
+        <p className="auth__invite">
+          Приглашение на курс: <b>{courses.map((c) => c.title).join(', ')}</b>
+        </p>
+      )}
       <form onSubmit={submit} className="auth__form">
         <div className="auth__row">
           <label>
@@ -139,8 +154,46 @@ export function Register() {
         <button className="btn btn--primary" disabled={busy || invite === 'checking'}>Зарегистрироваться</button>
       </form>
       <p className="muted auth__alt">
-        Уже есть аккаунт? <Link to="/login">Войти</Link>
+        Уже есть аккаунт? <Link to={code ? `/login?next=${encodeURIComponent(`/invite/${code}`)}` : '/login'}>Войти</Link>
+        {code && <> — после входа доступ к курсу откроется автоматически</>}
       </p>
+    </AuthCard>
+  )
+}
+
+// Уже вошедший пользователь открыл ссылку-приглашение: открываем ему курсы из ссылки
+function AcceptInvite({ code }) {
+  const [state, setState] = useState({ status: 'busy' })
+  useEffect(() => {
+    api
+      .post(`/api/auth/invite/${encodeURIComponent(code)}/accept`)
+      .then((r) => setState({ status: 'ok', courses: r.courses }))
+      .catch((e) => setState({ status: 'err', error: e.message }))
+  }, [code])
+
+  if (state.status === 'busy') return <AuthCard title="Приглашение">Открываем доступ…</AuthCard>
+  if (state.status === 'err')
+    return (
+      <AuthCard title="Ссылка недействительна">
+        <p>{state.error}. Попросите у преподавателя новую ссылку.</p>
+        <Link to="/">К моим курсам</Link>
+      </AuthCard>
+    )
+  if (state.courses.length === 1) return <Navigate to={`/course/${state.courses[0].id}`} replace />
+  return (
+    <AuthCard title="Доступ открыт">
+      {state.courses.length === 0 ? (
+        <p>Приглашение принято.</p>
+      ) : (
+        <ul>
+          {state.courses.map((c) => (
+            <li key={c.id}>
+              <Link to={`/course/${c.id}`}>{c.title}</Link>
+            </li>
+          ))}
+        </ul>
+      )}
+      <Link to="/">К моим курсам</Link>
     </AuthCard>
   )
 }

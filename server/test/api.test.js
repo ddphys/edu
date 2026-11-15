@@ -160,6 +160,41 @@ describe('админка', () => {
     assert.equal(r.status, 400)
   })
 
+  test('приглашение для уже зарегистрированного: открывает курс и добавляет метку', async () => {
+    const a = await admin()
+    const { courseId } = await firstLesson(a)
+    const { c, user } = await register('existing@test.ru')
+    const { body } = await a.post('/api/admin/invites', { label: 'Олимп. группа', note: 'с собрания 14.11', courseIds: [courseId] })
+    const code = body.invite.code
+
+    const info = await c.get(`/api/auth/invite/${code}`)
+    assert.equal(info.body.courses[0].id, courseId)
+    assert.equal((await c.post(`/api/auth/invite/${code}/accept`)).status, 200)
+    assert.equal((await c.post(`/api/auth/invite/${code}/accept`)).status, 200) // повтор — без ошибок
+
+    const { body: d } = await a.get(`/api/admin/users/${user.id}`)
+    assert.deepEqual(d.user.courseIds, [courseId])
+    assert.equal(d.user.invites.length, 1)
+    assert.equal(d.user.invites[0].note, 'с собрания 14.11')
+    const { body: inv } = await a.get('/api/admin/invites')
+    const row = inv.invites.find((i) => i.code === code)
+    assert.equal(row.uses, 1)
+    assert.equal(row.users, 1)
+    assert.equal((await client().post(`/api/auth/invite/${code}/accept`)).status, 401)
+  })
+
+  test('ручная запись на курс со стороны курса', async () => {
+    const a = await admin()
+    const { courseId } = await firstLesson(a)
+    const { user } = await register('manual@test.ru')
+    await a.post(`/api/admin/courses/${courseId}/students`, { userIds: [user.id] })
+    let { body } = await a.get(`/api/admin/courses/${courseId}/students`)
+    assert.ok(body.students.some((s) => s.id === user.id))
+    await a.del(`/api/admin/courses/${courseId}/students/${user.id}`)
+    ;({ body } = await a.get(`/api/admin/courses/${courseId}/students`))
+    assert.ok(!body.students.some((s) => s.id === user.id))
+  })
+
   test('комментарий и смена email', async () => {
     const a = await admin()
     const { user } = await register('typo@tset.ru')

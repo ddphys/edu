@@ -1,6 +1,12 @@
 import { hashPassword, normEmail, randomToken, validEmail, validatePassword } from '../../lib/auth.js'
 import { fail, intList, str, toInt } from '../../lib/http.js'
 
+// Все приглашения пользователя одним JSON-массивом
+const INVITES_SQL = (sql) => sql`coalesce((
+  SELECT json_agg(json_build_object('id', iv.id, 'label', iv.label, 'note', iv.note, 'at', iu.created_at) ORDER BY iu.created_at)
+  FROM invite_uses iu JOIN invites iv ON iv.id = iu.invite_id WHERE iu.user_id = u.id
+), '[]')`
+
 const RANK = { correct: 3, wrong: 1, skipped: 1, pending: 0 }
 
 // Какая из двух записей прогресса по одной задаче «лучше» — её и оставляем при объединении
@@ -22,6 +28,8 @@ const userRow = (u) => ({
   createdAt: u.created_at,
   lastSeenAt: u.last_seen_at,
   invite: u.invite_id ? { id: u.invite_id, label: u.invite_label } : null,
+  // все приглашения, которыми человек воспользовался (метка + заметка), по порядку
+  invites: u.invites ?? [],
   courseIds: u.course_ids ?? [],
   xp: u.xp ?? 0,
   solved: u.solved ?? 0,
@@ -37,7 +45,7 @@ export default async function adminUsers(app) {
   // ---------- Пользователи ----------
   app.get('/users', async () => {
     const rows = await sql`
-      SELECT u.*, i.label AS invite_label,
+      SELECT u.*, i.label AS invite_label, ${INVITES_SQL(sql)} AS invites,
         coalesce((SELECT array_agg(course_id ORDER BY course_id) FROM enrollments e WHERE e.user_id = u.id), '{}') AS course_ids,
         p.xp, p.solved, p.failed, p.started, p.last_activity_at,
         (SELECT count(*)::int FROM task_events ev WHERE ev.user_id = u.id AND ev.kind = 'attempt') AS attempts
@@ -58,7 +66,7 @@ export default async function adminUsers(app) {
   app.get('/users/:id', async (req) => {
     const id = toInt(req.params.id)
     const [u] = await sql`
-      SELECT u.*, i.label AS invite_label,
+      SELECT u.*, i.label AS invite_label, ${INVITES_SQL(sql)} AS invites,
         coalesce((SELECT array_agg(course_id) FROM enrollments e WHERE e.user_id = u.id), '{}') AS course_ids
       FROM users u LEFT JOIN invites i ON i.id = u.invite_id WHERE u.id = ${id}`
     if (!u) fail(404, 'Пользователь не найден')
@@ -202,6 +210,10 @@ export default async function adminUsers(app) {
         INSERT INTO enrollments (user_id, course_id, created_at)
         SELECT ${intoId}, course_id, created_at FROM enrollments WHERE user_id = ${fromId}
         ON CONFLICT DO NOTHING`
+      await tx`
+        INSERT INTO invite_uses (invite_id, user_id, created_at)
+        SELECT invite_id, ${intoId}, created_at FROM invite_uses WHERE user_id = ${fromId}
+        ON CONFLICT DO NOTHING`
       await tx`UPDATE invites SET created_by = ${intoId} WHERE created_by = ${fromId}`
       await tx`UPDATE tasks SET created_by = ${intoId} WHERE created_by = ${fromId}`
 
@@ -223,6 +235,31 @@ export default async function adminUsers(app) {
     const id = toInt(req.params.id)
     if (id === req.user.id) fail(400, 'Нельзя удалить себя')
     await sql`DELETE FROM users WHERE id = ${id}`
+    return { ok: true }
+  })
+
+  // ---------- Ученики курса (ручная запись) ----------
+  app.get('/courses/:id/students', async (req) => {
+    const rows = await sql`
+      SELECT u.id, u.first_name, u.last_name, u.email, e.created_at
+      FROM enrollments e JOIN users u ON u.id = e.user_id
+      WHERE e.course_id = ${toInt(req.params.id)} ORDER BY u.last_name, u.first_name`
+    return { students: rows.map((r) => ({ id: r.id, name: `${r.last_name} ${r.first_name}`, email: r.email, enrolledAt: r.created_at })) }
+  })
+
+  app.post('/courses/:id/students', async (req) => {
+    const courseId = toInt(req.params.id)
+    const userIds = intList(req.body?.userIds ?? [], 'Ученики')
+    await sql.begin(async (tx) => {
+      for (const uid of userIds) {
+        await tx`INSERT INTO enrollments (user_id, course_id) VALUES (${uid}, ${courseId}) ON CONFLICT DO NOTHING`
+      }
+    })
+    return { ok: true }
+  })
+
+  app.delete('/courses/:id/students/:userId', async (req) => {
+    await sql`DELETE FROM enrollments WHERE course_id = ${toInt(req.params.id)} AND user_id = ${toInt(req.params.userId)}`
     return { ok: true }
   })
 
@@ -258,7 +295,7 @@ export default async function adminUsers(app) {
 
   app.get('/invites', async () => {
     const rows = await sql`
-      SELECT i.*, (SELECT count(*)::int FROM users u WHERE u.invite_id = i.id) AS users
+      SELECT i.*, (SELECT count(*)::int FROM invite_uses u WHERE u.invite_id = i.id) AS users
       FROM invites i ORDER BY i.created_at DESC`
     return { invites: rows.map(inviteRow) }
   })

@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom'
 import { api } from '../api.js'
 import { EditCell, fmtDate, useAction, useLoad, useToast } from './ui.jsx'
 
-const linkOf = (code) => `${location.origin}/invite/${code}`
+import { inviteLink as linkOf } from './CourseAccess.jsx'
 
 export default function Invites() {
   const act = useAction()
@@ -55,8 +55,9 @@ export default function Invites() {
         <button className="b b--primary">Создать и скопировать ссылку</button>
       </form>
       <p className="muted small">
-        Каждый, кто зарегистрируется по ссылке, получит её метку — она видна в таблице учеников и в сводной. Без приглашения тоже можно
-        зарегистрироваться (на странице /register), тогда метки не будет.
+        Ссылка работает и для новых учеников (регистрация), и для уже зарегистрированных (после входа им сразу открываются курсы из ссылки).
+        Каждый, кто воспользовался ссылкой, получает её метку и заметку — они видны в таблице учеников, в карточке и в сводной.
+        Ссылки на конкретный курс удобно создавать прямо в конструкторе, в настройках курса.
       </p>
       <div className="tablewrap">
         <table className="t">
@@ -67,7 +68,7 @@ export default function Invites() {
               <th>Заметка</th>
               <th>Ссылка</th>
               <th>Курсы</th>
-              <th>Регистраций</th>
+              <th title="Сколько человек воспользовались ссылкой (новые и уже зарегистрированные)">Воспользовались</th>
               <th>Лимит</th>
               <th>Действует до</th>
               <th>Создана</th>

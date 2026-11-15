@@ -4,6 +4,8 @@ import { api } from '../api.js'
 import { useAuth } from '../auth.jsx'
 import { Drawer, EditCell, ROLE_LABEL, STATUS_LABEL, fmtAgo, fmtDate, fmtDateTime, useAction, useLoad, useSort } from './ui.jsx'
 
+const labelsOf = (u) => u.invites.map((i) => i.label).join(', ')
+
 export default function Users() {
   const { userId } = useParams()
   const nav = useNavigate()
@@ -18,19 +20,19 @@ export default function Users() {
   const [merging, setMerging] = useState(null)
 
   const courses = tree?.courses || []
-  const labels = useMemo(() => [...new Set((data?.users || []).map((u) => u.invite?.label).filter(Boolean))].sort(), [data])
+  const labels = useMemo(() => [...new Set((data?.users || []).flatMap((u) => u.invites.map((i) => i.label)))].sort(), [data])
   const rows = useMemo(() => {
     const s = q.trim().toLowerCase()
     return (data?.users || []).filter(
       (u) =>
         (!role || u.role === role) &&
-        (!label || (label === '—' ? !u.invite : u.invite?.label === label)) &&
-        (!s || `${u.id} ${u.lastName} ${u.firstName} ${u.email} ${u.note} ${u.invite?.label ?? ''}`.toLowerCase().includes(s)),
+        (!label || (label === '—' ? !u.invites.length : u.invites.some((i) => i.label === label))) &&
+        (!s || `${u.id} ${u.lastName} ${u.firstName} ${u.email} ${u.note} ${labelsOf(u)} ${u.invites.map((i) => i.note).join(' ')}`.toLowerCase().includes(s)),
     )
   }, [data, q, label, role])
   const { sorted, Th } = useSort(rows, ['createdAt', 'desc'], {
     name: (u) => `${u.lastName} ${u.firstName}`,
-    label: (u) => u.invite?.label ?? '',
+    label: (u) => labelsOf(u),
     lastSeenAt: (u) => (u.lastSeenAt ? new Date(u.lastSeenAt).getTime() : null),
     lastActivityAt: (u) => (u.lastActivityAt ? new Date(u.lastActivityAt).getTime() : null),
     createdAt: (u) => new Date(u.createdAt).getTime(),
@@ -39,7 +41,12 @@ export default function Users() {
   const patch = async (id, body) => {
     if (await act(() => api.patch(`/api/admin/users/${id}`, body), 'Сохранено')) reload()
   }
-  const toggleSel = (id) => setSelected((s) => (s.includes(id) ? s.filter((x) => x !== id) : [...s, id].slice(-2)))
+  async function enroll(courseId) {
+    const c = courses.find((x) => x.id === courseId)
+    if (!confirm(`Записать ${selected.length} чел. на курс «${c.title}»?`)) return
+    if (await act(() => api.post(`/api/admin/courses/${courseId}/students`, { userIds: selected }), 'Доступ открыт')) reload()
+  }
+  const toggleSel = (id) => setSelected((s) => (s.includes(id) ? s.filter((x) => x !== id) : [...s, id]))
   const byId = (id) => data?.users.find((u) => u.id === id)
 
   // Похожие аккаунты: одинаковые имя+фамилия — кандидаты на объединение
@@ -71,9 +78,24 @@ export default function Users() {
         </select>
         <span className="muted">{sorted.length} чел.</span>
         <span className="toolbar__sep" />
-        <span className="muted">Отметьте 2 аккаунта галочками →</span>
-        <button className="b b--primary" disabled={selected.length !== 2} onClick={() => setMerging(selected)}>
-          Объединить аккаунты
+        {selected.length > 0 && (
+          <>
+            <b>Выбрано: {selected.length}</b>
+            <select value="" onChange={(e) => e.target.value && enroll(Number(e.target.value))}>
+              <option value="">Записать на курс…</option>
+              {courses.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.title}
+                </option>
+              ))}
+            </select>
+            <button className="b" onClick={() => setSelected([])}>
+              Снять выбор
+            </button>
+          </>
+        )}
+        <button className="b b--primary" disabled={selected.length !== 2} onClick={() => setMerging(selected)} title="Отметьте ровно 2 аккаунта">
+          Объединить 2 аккаунта
         </button>
       </div>
       {error && <div className="err">{error}</div>}
@@ -85,7 +107,7 @@ export default function Users() {
               <Th k="id">#</Th>
               <Th k="name">Фамилия Имя</Th>
               <Th k="email">Email</Th>
-              <Th k="label">Метка (приглашение)</Th>
+              <Th k="label">Метки (приглашения)</Th>
               <th style={{ minWidth: 220 }}>Комментарий</th>
               <th>Курсы</th>
               <Th k="xp">XP</Th>
@@ -118,7 +140,9 @@ export default function Users() {
                   {u.blocked && <span className="badge">заблокирован</span>}
                 </td>
                 <td className="mono ell">{u.email}</td>
-                <td className="ell">{u.invite?.label ?? <span className="muted">—</span>}</td>
+                <td className="ell" title={u.invites.map((i) => `${i.label}${i.note ? ' — ' + i.note : ''} (${fmtDate(i.at)})`).join('\n')}>
+                  {labelsOf(u) || <span className="muted">—</span>}
+                </td>
                 <td className="cell-edit">
                   <EditCell value={u.note} multiline placeholder="добавить…" onSave={(v) => patch(u.id, { note: v })} />
                 </td>
@@ -191,7 +215,7 @@ function MergeDialog({ a, b, onClose, onDone }) {
         #{u.id} {u.lastName} {u.firstName}
       </b>
       <div className="mono">{u.email}</div>
-      <div>Метка: {u.invite?.label ?? '—'}</div>
+      <div>Метки: {labelsOf(u) || '—'}</div>
       <div>Регистрация: {fmtDateTime(u.createdAt)}</div>
       <div>Был: {fmtDateTime(u.lastSeenAt)}</div>
       <div>
@@ -273,7 +297,18 @@ function UserDrawer({ id, courses, onClose, onChanged, onMerge }) {
               <tr><th>Фамилия</th><td className="cell-edit"><EditCell value={u.lastName} onSave={(v) => patch({ lastName: v })} /></td></tr>
               <tr><th>Имя</th><td className="cell-edit"><EditCell value={u.firstName} onSave={(v) => patch({ firstName: v })} /></td></tr>
               <tr><th>Email</th><td className="cell-edit mono"><EditCell value={u.email} onSave={(v) => patch({ email: v })} /></td></tr>
-              <tr><th>Метка</th><td>{u.invite?.label ?? '—'}</td></tr>
+              <tr>
+                <th>Приглашения</th>
+                <td>
+                  {u.invites.length === 0 && '—'}
+                  {u.invites.map((i) => (
+                    <div key={i.id}>
+                      <b>{i.label}</b> <span className="muted">{fmtDate(i.at)}</span>
+                      {i.note && <div className="muted">{i.note}</div>}
+                    </div>
+                  ))}
+                </td>
+              </tr>
               <tr><th>Комментарий</th><td className="cell-edit"><EditCell value={u.note} multiline placeholder="добавить…" onSave={(v) => patch({ note: v })} /></td></tr>
               <tr><th>Регистрация</th><td>{fmtDateTime(u.createdAt)}</td></tr>
               <tr><th>Был на сайте</th><td>{fmtDateTime(u.lastSeenAt)}</td></tr>

@@ -1,0 +1,8 @@
+# Замените example.ru на свой домен
+example.ru, www.example.ru {
+	encode gzip
+	request_body {
+		max_size 12MB
+	}
+	reverse_proxy 127.0.0.1:3000
+}

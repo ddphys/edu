@@ -33,6 +33,22 @@ function tooManyAttempts(key) {
   return hits.length > 20
 }
 
+// Записать, что пользователь воспользовался приглашением, и открыть ему курсы из приглашения.
+// Повторное использование той же ссылки тем же человеком ничего не меняет.
+async function applyInvite(tx, invite, userId) {
+  const [used] = await tx`
+    INSERT INTO invite_uses (invite_id, user_id) VALUES (${invite.id}, ${userId})
+    ON CONFLICT DO NOTHING RETURNING invite_id`
+  if (used) await tx`UPDATE invites SET uses = uses + 1 WHERE id = ${invite.id}`
+  for (const cid of invite.course_ids) {
+    await tx`INSERT INTO enrollments (user_id, course_id) SELECT ${userId}, id FROM courses WHERE id = ${cid} ON CONFLICT DO NOTHING`
+  }
+  return Boolean(used)
+}
+
+const inviteCourses = (sql, invite) =>
+  sql`SELECT id, title FROM courses WHERE id = ANY(${invite.course_ids}) ORDER BY position, id`
+
 export default async function authRoutes(app) {
   const { sql } = app
 
@@ -40,7 +56,28 @@ export default async function authRoutes(app) {
 
   app.get('/invite/:code', async (req) => {
     const inv = await findInvite(sql, req.params.code)
-    return { valid: Boolean(inv) }
+    // уже воспользовавшийся ссылкой человек может открыть её снова, даже если лимит исчерпан
+    const [own] = req.user
+      ? await sql`SELECT i.* FROM invites i JOIN invite_uses u ON u.invite_id = i.id WHERE i.code = ${String(req.params.code)} AND u.user_id = ${req.user.id}`
+      : []
+    const invite = inv || own
+    if (!invite) return { valid: false }
+    return { valid: true, used: Boolean(own), courses: await inviteCourses(sql, invite) }
+  })
+
+  // Приглашение для уже зарегистрированного пользователя: открывает курсы из ссылки
+  app.post('/invite/:code/accept', { preHandler: app.requireUser }, async (req) => {
+    const invite = await findInvite(sql, req.params.code)
+    if (!invite) {
+      const [own] = await sql`SELECT i.* FROM invites i JOIN invite_uses u ON u.invite_id = i.id WHERE i.code = ${String(req.params.code)} AND u.user_id = ${req.user.id}`
+      if (own) return { ok: true, courses: await inviteCourses(sql, own) }
+      fail(400, 'Ссылка-приглашение недействительна или устарела')
+    }
+    await sql.begin(async (tx) => {
+      await applyInvite(tx, invite, req.user.id)
+      await tx`UPDATE users SET invite_id = coalesce(invite_id, ${invite.id}) WHERE id = ${req.user.id}`
+    })
+    return { ok: true, courses: await inviteCourses(sql, invite) }
   })
 
   app.post('/register', async (req, reply) => {
@@ -64,12 +101,7 @@ export default async function authRoutes(app) {
         INSERT INTO users (email, password_hash, first_name, last_name, role, invite_id)
         VALUES (${email}, ${hash}, ${firstName}, ${lastName}, ${invite?.role ?? 'student'}, ${invite?.id ?? null})
         RETURNING *`
-      if (invite) {
-        await tx`UPDATE invites SET uses = uses + 1 WHERE id = ${invite.id}`
-        for (const cid of invite.course_ids) {
-          await tx`INSERT INTO enrollments (user_id, course_id) SELECT ${u.id}, id FROM courses WHERE id = ${cid} ON CONFLICT DO NOTHING`
-        }
-      }
+      if (invite) await applyInvite(tx, invite, u.id)
       return u
     })
     setSessionCookie(reply, await createSession(sql, user.id))

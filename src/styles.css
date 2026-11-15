@@ -148,3 +148,4 @@ h1, h2, h3 { margin: 0; }
 .tag--draft { background: #eee; margin-left: 6px; }
 .math__img { max-width: 100%; height: auto; display: block; margin: 8px 0; border-radius: 8px; }
 @media (max-width: 860px) { .auth__row { grid-template-columns: 1fr; } }
+.auth__invite { background: var(--accent-soft); border-radius: 8px; padding: 10px 14px; margin: 0 0 16px; }
