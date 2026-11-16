@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import Video from './Video.jsx'
 import Task from './Task.jsx'
 import { allTasks, isGroup, normalizeState } from '../lib.js'
+import { href } from '../routes.js'
 import { useStore } from '../store.jsx'
 
 const STATUS = {
@@ -52,10 +53,8 @@ function TaskGroup({ group, firstNumber, st, taskProps }) {
 }
 
 // course и lesson — открытая часть контента; прогресс и действия берутся из общего состояния
-// links — адреса для переходов: { back, lesson(id) }; без них (предпросмотр в редакторе) ссылок нет
-const DEFAULT_LINKS = { back: '#/', lesson: (id) => `#/lesson/${id}` }
-
-export default function Lesson({ course, lesson, number, prev, next, links = DEFAULT_LINKS }) {
+// links: false — без переходов между страницами (предпросмотр в редакторе)
+export default function Lesson({ course, lesson, number, prev, next, links = true }) {
   const { progress, actions, revealedOf, viewer } = useStore()
   const saved = progress.courses[course.id]
   const st = (t) => normalizeState(saved?.tasks?.[t.id])
@@ -95,7 +94,7 @@ export default function Lesson({ course, lesson, number, prev, next, links = DEF
   return (
     <div className="lesson">
       {links && (
-        <a className="back" href={links.back}>
+        <a className="back" href={href.course(course.id)}>
           ← Все уроки
         </a>
       )}
@@ -162,7 +161,7 @@ export default function Lesson({ course, lesson, number, prev, next, links = DEF
       {links && (
         <nav className="lesson-nav">
           {prev ? (
-            <a href={links.lesson(prev.id)}>
+            <a href={href.lesson(course.id, prev.id)}>
               <small>← Предыдущий урок</small>
               {prev.title}
             </a>
@@ -170,7 +169,7 @@ export default function Lesson({ course, lesson, number, prev, next, links = DEF
             <span />
           )}
           {next ? (
-            <a className="lesson-nav__next" href={links.lesson(next.id)}>
+            <a className="lesson-nav__next" href={href.lesson(course.id, next.id)}>
               <small>Следующий урок →</small>
               {next.title}
             </a>

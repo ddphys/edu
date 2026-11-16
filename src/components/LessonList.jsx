@@ -1,11 +1,13 @@
 import { useContext } from 'react'
 import { allTasks } from '../lib.js'
+import { href } from '../routes.js'
 import { ImagesContext } from './Math.jsx'
 
 const solvedOf = (l, tasks) => allTasks(l).filter((t) => tasks[t.id]?.status === 'correct').length
 
 // Страница курса: описание и список уроков. progress — сохранённый прогресс по этому курсу.
-export default function LessonList({ course, progress, onReset }) {
+// links: false — без переходов (предпросмотр в редакторе).
+export default function LessonList({ course, progress, onReset, links = true }) {
   const lessons = course.lessons ?? []
   const tasks = progress?.tasks ?? {}
   // Фото преподавателя — картинка курса или ссылка
@@ -16,6 +18,11 @@ export default function LessonList({ course, progress, onReset }) {
 
   return (
     <>
+      {links && (
+        <a className="back" href={href.catalog()}>
+          ← Все курсы
+        </a>
+      )}
       <section className="hero">
         <div className="muted">{course.badge}</div>
         <h1>{course.title}</h1>
@@ -37,7 +44,7 @@ export default function LessonList({ course, progress, onReset }) {
           const solved = solvedOf(l, tasks)
           const total = allTasks(l).length
           return (
-            <a key={l.id} className="lesson-row" href={`#/lesson/${l.id}`}>
+            <a key={l.id} className="lesson-row" href={links ? href.lesson(course.id, l.id) : undefined}>
               <span className="lesson-row__num">{i + 1}</span>
               <span className="lesson-row__body">
                 <span className="lesson-row__title">
@@ -70,7 +77,7 @@ export default function LessonList({ course, progress, onReset }) {
 
       {hasProgress && (
         <button className="link-btn" onClick={onReset}>
-          Сбросить прогресс
+          Сбросить прогресс по курсу
         </button>
       )}
     </>

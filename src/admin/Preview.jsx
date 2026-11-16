@@ -1,4 +1,5 @@
 import { Component, useEffect, useMemo } from 'react'
+import Catalog from '../components/Catalog.jsx'
 import Lesson from '../components/Lesson.jsx'
 import LessonList from '../components/LessonList.jsx'
 import { ImagesContext } from '../components/Math.jsx'
@@ -19,7 +20,7 @@ class Boundary extends Component {
   }
 }
 
-function Inner({ api, version, courseId, lessonId }) {
+function Inner({ api, version, courseId, lessonId, catalog }) {
   const { status, content, progress, actions } = useStore()
 
   // Черновик изменился — предпросмотр перечитывает контент (без перезагрузки видео и сброса решённого)
@@ -34,6 +35,17 @@ function Inner({ api, version, courseId, lessonId }) {
     [api, course],
   )
 
+  if (status === 'ready' && catalog)
+    return (
+      <>
+        <div className="adm-preview__bar">
+          <span>Так выглядит каталог курсов на главной странице.</span>
+        </div>
+        <div className="adm-preview__page">
+          <Catalog site={content.site} courses={content.courses} progress={progress} imageUrl={(c, name) => api.imageUrl(c.id, name)} links={false} />
+        </div>
+      </>
+    )
   if (status !== 'ready' || !course) return <p className="adm-hint">Предпросмотр появится, когда у курса будет id.</p>
   const lessons = course.lessons ?? []
   const index = lessons.findIndex((l) => l.id === lessonId)
@@ -48,9 +60,9 @@ function Inner({ api, version, courseId, lessonId }) {
       </div>
       <div className="adm-preview__page">
         {index !== -1 ? (
-          <Lesson key={lessonId} course={course} lesson={lessons[index]} number={index + 1} links={null} />
+          <Lesson key={lessonId} course={course} lesson={lessons[index]} number={index + 1} links={false} />
         ) : (
-          <LessonList course={course} progress={progress?.courses[course.id]} onReset={() => actions.resetProgress()} />
+          <LessonList course={course} progress={progress?.courses[course.id]} onReset={() => actions.resetProgress()} links={false} />
         )}
       </div>
     </ImagesContext.Provider>
@@ -59,11 +71,11 @@ function Inner({ api, version, courseId, lessonId }) {
 
 // Предпросмотр теми же компонентами, которые видит ученик.
 // api — локальная реализация интерфейса поверх черновика (собирается в Admin.jsx).
-export default function Preview({ api, version, courseId, lessonId }) {
+export default function Preview({ api, version, courseId, lessonId, catalog = false }) {
   return (
     <StoreProvider api={api}>
       <Boundary version={version}>
-        <Inner api={api} version={version} courseId={courseId} lessonId={lessonId} />
+        <Inner api={api} version={version} courseId={courseId} lessonId={lessonId} catalog={catalog} />
       </Boundary>
     </StoreProvider>
   )

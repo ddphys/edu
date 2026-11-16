@@ -158,6 +158,7 @@ export default function Admin() {
   const lesson = li === -1 ? null : course.lessons[li]
   const view = !course ? 'site' : sel.view === 'lesson' && !lesson ? 'course' : sel.view
 
+
   // ----- картинки выбранного курса -----
   const courseImages = useMemo(() => {
     if (!course) return []
@@ -536,7 +537,7 @@ export default function Admin() {
             </main>
 
             <section className="adm-preview" aria-label="Предпросмотр">
-              {course ? <Preview api={previewApi} version={version} courseId={course.id} lessonId={view === 'lesson' ? lesson.id : null} /> : <p className="adm-hint">Добавьте курс — здесь появится предпросмотр.</p>}
+              <Preview api={previewApi} version={version} courseId={course?.id} lessonId={view === 'lesson' ? lesson.id : null} catalog={view === 'site'} />
             </section>
           </div>
         </div>

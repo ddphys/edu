@@ -1,0 +1,59 @@
+import { describe, expect, it } from 'vitest'
+import { href, legacyTarget, parseRoute } from '../src/routes.js'
+import { checkContentDir } from '../scripts/content-fs.js'
+
+describe('адреса страниц', () => {
+  it('каталог', () => {
+    for (const hash of ['', '#', '#/', '#//']) expect(parseRoute(hash)).toEqual({ page: 'catalog' })
+  })
+
+  it('курс, урок, редактор', () => {
+    expect(parseRoute('#/course/physics')).toEqual({ page: 'course', courseId: 'physics' })
+    expect(parseRoute('#/course/physics/')).toEqual({ page: 'course', courseId: 'physics' })
+    expect(parseRoute('#/course/physics/lesson/l1')).toEqual({ page: 'lesson', courseId: 'physics', lessonId: 'l1' })
+    expect(parseRoute('#/admin')).toEqual({ page: 'admin' })
+    expect(parseRoute('#/admin/')).toEqual({ page: 'admin' })
+  })
+
+  it('старая ссылка на урок', () => {
+    expect(parseRoute('#/lesson/l1')).toEqual({ page: 'legacy-lesson', lessonId: 'l1' })
+  })
+
+  it('непонятный адрес', () => {
+    for (const hash of ['#/что-то', '#/course', '#/course/a/b', '#/course/a/lesson', '#/lesson', '#/admin/x'])
+      expect(parseRoute(hash)).toEqual({ page: 'unknown' })
+  })
+
+  it('ссылки читаются обратно', () => {
+    expect(parseRoute(href.catalog())).toEqual({ page: 'catalog' })
+    expect(parseRoute(href.course('demo'))).toEqual({ page: 'course', courseId: 'demo' })
+    expect(parseRoute(href.lesson('demo', 'l-1'))).toEqual({ page: 'lesson', courseId: 'demo', lessonId: 'l-1' })
+    expect(parseRoute(href.admin())).toEqual({ page: 'admin' })
+  })
+})
+
+describe('старые ссылки #/lesson/<урок>', () => {
+  const content = {
+    site: { legacyCourse: 'old' },
+    courses: [
+      { id: 'new', lessons: [{ id: 'l1' }, { id: 'intro' }] },
+      { id: 'old', lessons: [{ id: 'l1' }, { id: 'l2' }] },
+    ],
+  }
+
+  it('ведут в курс, который раньше был единственным', () => {
+    expect(legacyTarget('l1', content)).toBe('#/course/old/lesson/l1')
+    expect(legacyTarget('l2', content)).toBe('#/course/old/lesson/l2')
+  })
+
+  it('урок есть только в другом курсе — ведут туда; нигде нет — null', () => {
+    expect(legacyTarget('intro', content)).toBe('#/course/new/lesson/intro')
+    expect(legacyTarget('net', content)).toBeNull()
+    expect(legacyTarget('l1', { site: {}, courses: [] })).toBeNull()
+  })
+
+  it('все старые ссылки опубликованного курса открываются', () => {
+    const { content: published } = checkContentDir()
+    for (const id of ['l1', 'l2', 'l3']) expect(legacyTarget(id, published)).toBe(`#/course/physics-olymp-10-11/lesson/${id}`)
+  })
+})

@@ -172,6 +172,7 @@ textarea.adm-input { resize: vertical; line-height: 1.45; min-height: 40px; }
 .adm-preview .lesson-row__progress { grid-column: 2; }
 .adm-preview .lesson-row__arrow { display: none; }
 .adm-preview .hw-head { flex-wrap: wrap; }
+.adm-preview .catalog { grid-template-columns: 1fr; }
 
 @media (max-width: 1280px) {
   .adm-body { grid-template-columns: 240px minmax(0, 1fr); }
