@@ -4,6 +4,7 @@
 //   #/course/<курс>                 — страница курса со списком уроков
 //   #/course/<курс>/lesson/<урок>   — урок
 //   #/admin                         — редактор курса
+//   #/ege, #/ege/history, #/ege/students — бланк проверки ЕГЭ (страница преподавателя, ссылки на сайте нет)
 //   #/lesson/<урок>                 — старая ссылка (когда курс был один): перенаправляется на новую
 
 const decode = (s) => {
@@ -14,6 +15,8 @@ const decode = (s) => {
   }
 }
 
+const EGE_VIEWS = ['history', 'students']
+
 export function parseRoute(hash) {
   const parts = String(hash ?? '')
     .replace(/^#/, '')
@@ -22,6 +25,8 @@ export function parseRoute(hash) {
     .map(decode)
   if (parts.length === 0) return { page: 'catalog' }
   if (parts[0] === 'admin' && parts.length === 1) return { page: 'admin' }
+  if (parts[0] === 'ege' && parts.length === 1) return { page: 'ege', view: 'check' }
+  if (parts[0] === 'ege' && parts.length === 2 && EGE_VIEWS.includes(parts[1])) return { page: 'ege', view: parts[1] }
   if (parts[0] === 'course' && parts.length === 2) return { page: 'course', courseId: parts[1] }
   if (parts[0] === 'course' && parts[2] === 'lesson' && parts.length === 4) return { page: 'lesson', courseId: parts[1], lessonId: parts[3] }
   if (parts[0] === 'lesson' && parts.length === 2) return { page: 'legacy-lesson', lessonId: parts[1] }
@@ -33,6 +38,7 @@ export const href = {
   course: (courseId) => `#/course/${encodeURIComponent(courseId)}`,
   lesson: (courseId, lessonId) => `#/course/${encodeURIComponent(courseId)}/lesson/${encodeURIComponent(lessonId)}`,
   admin: () => '#/admin',
+  ege: (view = 'check') => (view === 'check' ? '#/ege' : `#/ege/${view}`),
 }
 
 // Куда ведёт старая ссылка #/lesson/<урок>. Сначала урок ищется в курсе, который был единственным
