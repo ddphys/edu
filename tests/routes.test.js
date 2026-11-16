@@ -24,12 +24,24 @@ describe('адреса страниц', () => {
     for (const v of ['check', 'history', 'students']) expect(parseRoute(href.ege(v))).toEqual({ page: 'ege', view: v })
   })
 
+  it('тренажёры', () => {
+    expect(parseRoute('#/trainers')).toEqual({ page: 'trainers', view: 'list' })
+    expect(parseRoute('#/trainers/')).toEqual({ page: 'trainers', view: 'list' })
+    expect(parseRoute('#/trainers/friction')).toEqual({ page: 'trainers', view: 'levels', trainer: 'friction' })
+    expect(parseRoute('#/trainers/friction/1')).toEqual({ page: 'trainers', view: 'play', trainer: 'friction', level: 1 })
+    expect(parseRoute('#/trainers/friction/7')).toEqual({ page: 'trainers', view: 'play', trainer: 'friction', level: 7 })
+    expect(parseRoute(href.trainers())).toEqual({ page: 'trainers', view: 'list' })
+    expect(parseRoute(href.trainer('friction'))).toEqual({ page: 'trainers', view: 'levels', trainer: 'friction' })
+    expect(parseRoute(href.trainerLevel('friction', 2))).toEqual({ page: 'trainers', view: 'play', trainer: 'friction', level: 2 })
+  })
+
   it('старая ссылка на урок', () => {
     expect(parseRoute('#/lesson/l1')).toEqual({ page: 'legacy-lesson', lessonId: 'l1' })
   })
 
   it('непонятный адрес', () => {
-    for (const hash of ['#/что-то', '#/course', '#/course/a/b', '#/course/a/lesson', '#/course/a/lesson/b/c', '#/course/a/lesson/b/print/x', '#/lesson', '#/admin/x', '#/ege/x', '#/ege/check', '#/ege/history/1'])
+    for (const hash of ['#/что-то', '#/course', '#/course/a/b', '#/course/a/lesson', '#/course/a/lesson/b/c', '#/course/a/lesson/b/print/x', '#/lesson', '#/admin/x', '#/ege/x', '#/ege/check', '#/ege/history/1',
+      '#/trainers/net', '#/trainers/friction/0', '#/trainers/friction/8', '#/trainers/friction/x', '#/trainers/friction/1/2', '#/trainers/toString'])
       expect(parseRoute(hash)).toEqual({ page: 'unknown' })
   })
 

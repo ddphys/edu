@@ -96,6 +96,11 @@ export function createLocalApi({ source, kv, files = null, now = () => Date.now(
       act(courseId, taskId, (course, task, state) => applySubmit(course, task, state, input, now()), { input, meta }),
     skipTask: (courseId, taskId, meta) => act(courseId, taskId, (course, task, state) => applySkip(task, state), { meta }),
 
+    // Запись в журнал вне курсов — для тренажёров: { course: 'trainer-…', task, kind: 'wrong' | 'correct', input?, ms? }
+    async logAttempt(event) {
+      log(event)
+    },
+
     // Журнал попыток целиком: { version, events }
     async getAttempts() {
       return structuredClone((journal ??= readJournal(kv)))

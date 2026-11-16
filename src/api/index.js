@@ -20,6 +20,8 @@
 //       meta = { ms } — сколько задача была на экране с прошлого действия; на проверку не влияет,
 //       вместе с самим ответом пишется в журнал попыток
 //   getAttempts() → { version, events }   журнал попыток (формат — в attempts.js)
+//   logAttempt({ course, task, kind, input?, ms? })  → дописать событие в журнал вне курсов:
+//       так пишут ответы тренажёры (course — 'trainer-friction', task — номер ситуации)
 //
 //   answerQuiz(courseId, lessonId, index, choice, { retry }) → { saved, correct, explain }
 //   skipQuizRetry(courseId, lessonId, index)                 → { saved }
