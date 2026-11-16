@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react'
+import Poster from './Poster.jsx'
 import Video from './Video.jsx'
 import Task from './Task.jsx'
-import { allTasks, isGroup, normalizeState } from '../lib.js'
+import { allTasks, isGroup, normalizeState, plural, taskMaxXp } from '../lib.js'
 import { href } from '../routes.js'
 import { useStore } from '../store.jsx'
 
@@ -93,6 +94,15 @@ export default function Lesson({ course, lesson, number, prev, next, links = tru
   const tasks = allTasks(lesson)
   const xpEarned = tasks.reduce((s, t) => s + (st(t).xp || 0), 0)
   const solved = tasks.filter((t) => st(t).status === 'correct').length
+  const xpMax = tasks.reduce((s, t) => s + (taskMaxXp(t, course) || 0), 0)
+  const facts =
+    tasks.length > 0
+      ? [
+          { value: tasks.length, label: plural(tasks.length, 'задача', 'задачи', 'задач') },
+          { value: solved, label: 'решено' },
+          { value: xpEarned, label: `XP из ${xpMax}` },
+        ]
+      : []
 
   // Открытые подсказки и разборы уже начатых задач приходят отдельным запросом
   const [ready, setReady] = useState(false)
@@ -125,21 +135,22 @@ export default function Lesson({ course, lesson, number, prev, next, links = tru
 
   return (
     <div className="lesson">
-      {links && (
-        <a className="back" href={href.course(course.id)}>
-          ← Все уроки
-        </a>
-      )}
-
-      <header className="lesson__head">
-        <div className="muted">Урок {number}</div>
-        <h1>{lesson.title}</h1>
-        <ul className="bullets">
-          {(lesson.description ?? []).map((d) => (
-            <li key={d}>{d}</li>
-          ))}
-        </ul>
-      </header>
+      <Poster
+        className="lesson__head"
+        back={links ? { href: href.course(course.id), text: 'Все уроки' } : null}
+        label={`Урок ${number}`}
+        mark={number}
+        title={lesson.title}
+        facts={facts}
+      >
+        {(lesson.description ?? []).length > 0 && (
+          <ul className="poster__list">
+            {lesson.description.map((d) => (
+              <li key={d}>{d}</li>
+            ))}
+          </ul>
+        )}
+      </Poster>
 
       <section className="section" aria-label="Запись занятия">
         <Video

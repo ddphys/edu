@@ -1,7 +1,8 @@
 import { useContext } from 'react'
-import { allTasks } from '../lib.js'
+import { allTasks, courseTasks, plural } from '../lib.js'
 import { href } from '../routes.js'
 import { ImagesContext } from './Math.jsx'
+import Poster from './Poster.jsx'
 
 const solvedOf = (l, tasks) => allTasks(l).filter((t) => tasks[t.id]?.status === 'correct').length
 
@@ -15,28 +16,38 @@ export default function LessonList({ course, progress, onReset, links = true }) 
   const photo = course.teacher?.photo
   const photoSrc = photo ? (/^https?:\/\//.test(photo) ? photo : image(photo)?.src) : null
   const hasProgress = Object.keys(tasks).length > 0 || Object.keys(progress?.quiz ?? {}).length > 0
+  const all = courseTasks(course)
+  const solvedAll = all.filter((t) => tasks[t.id]?.status === 'correct').length
+  const xp = all.reduce((sum, t) => sum + (tasks[t.id]?.xp || 0), 0)
+  const facts = [
+    { value: lessons.length, label: plural(lessons.length, 'урок', 'урока', 'уроков') },
+    ...(all.length > 0
+      ? [
+          { value: all.length, label: plural(all.length, 'задача', 'задачи', 'задач') },
+          { value: solvedAll, label: 'решено' },
+          { value: xp, label: 'XP' },
+        ]
+      : []),
+  ]
 
   return (
     <>
-      {links && (
-        <a className="back" href={href.catalog()}>
-          ← Все курсы
-        </a>
-      )}
-      <section className="hero">
-        <div className="muted">{course.badge}</div>
-        <h1>{course.title}</h1>
-        <p className="hero__about">{course.about}</p>
+      <Poster
+        className="poster--course"
+        back={links ? { href: href.catalog(), text: 'Все курсы' } : null}
+        label={course.badge}
+        title={course.title}
+        facts={facts}
+      >
+        {course.about && <p className="poster__about">{course.about}</p>}
         <div className="teacher">
-          <div className="teacher__photo">
-            {photoSrc ? <img src={photoSrc} alt="" /> : (course.teacher?.name || '?')[0]}
-          </div>
+          <div className="teacher__photo">{photoSrc ? <img src={photoSrc} alt="" /> : (course.teacher?.name || '?')[0]}</div>
           <div>
-            <div className="muted">Преподаватель</div>
+            <div className="teacher__role">Преподаватель</div>
             {course.teacher?.name}
           </div>
         </div>
-      </section>
+      </Poster>
 
       <h2 className="list-title">Уроки</h2>
       <nav className="lessons">
@@ -44,7 +55,7 @@ export default function LessonList({ course, progress, onReset, links = true }) 
           const solved = solvedOf(l, tasks)
           const total = allTasks(l).length
           return (
-            <a key={l.id} className="lesson-row" href={links ? href.lesson(course.id, l.id) : undefined}>
+            <a key={l.id} className={`lesson-row ${total > 0 && solved === total ? 'lesson-row--done' : ''}`} href={links ? href.lesson(course.id, l.id) : undefined}>
               <span className="lesson-row__num">{i + 1}</span>
               <span className="lesson-row__body">
                 <span className="lesson-row__title">

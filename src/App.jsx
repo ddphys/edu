@@ -1,4 +1,4 @@
-import { Suspense, lazy, useEffect, useMemo, useState } from 'react'
+import { Suspense, lazy, useEffect, useLayoutEffect, useMemo, useState } from 'react'
 import Catalog from './components/Catalog.jsx'
 import Lesson from './components/Lesson.jsx'
 import LessonList from './components/LessonList.jsx'
@@ -68,6 +68,11 @@ export default function App() {
     if (title) document.title = title
   }, [title])
 
+  // Вид страницы зависит от того, что открыто: у курса и урока — белый лист (см. начало styles.css)
+  useLayoutEffect(() => {
+    document.documentElement.dataset.page = route.page
+  }, [route.page])
+
   if (route.page === 'admin')
     return (
       <Suspense fallback={<div className="page muted">Открываем редактор…</div>}>
@@ -96,6 +101,9 @@ export default function App() {
   const reset = () => {
     if (confirm(`Сбросить весь прогресс и XP по курсу «${course.title}»?`)) actions.resetProgress(course.id)
   }
+
+  // Курс и урок открываются плакатной шапкой во всю ширину окна — она встаёт вплотную к шапке сайта
+  const poster = Boolean((route.page === 'course' && course) || (route.page === 'lesson' && lesson))
 
   let body
   if (route.page === 'catalog') body = <Catalog site={site} courses={courses} progress={progress} imageUrl={(c, name) => api.imageUrl(c.id, name)} />
@@ -157,7 +165,7 @@ export default function App() {
         )}
       </header>
 
-      <div className="page">{body}</div>
+      <div className={`page ${poster ? 'page--poster' : ''}`}>{body}</div>
     </ImagesContext.Provider>
   )
 }
