@@ -11,6 +11,8 @@ const pct = (x) => Math.round(x * 100) + '%'
 
 // Редактор курса подгружается отдельно: на страницу ученика его код не попадает
 const Admin = lazy(() => import('./admin/Admin.jsx'))
+// Бланк проверки ЕГЭ — тоже отдельным файлом, курсы ему не нужны
+const Ege = lazy(() => import('./ege/Ege.jsx'))
 
 const currentRoute = () => parseRoute(window.location.hash)
 
@@ -59,7 +61,7 @@ export default function App() {
     [api, course],
   )
 
-  const title = ready ? [lesson?.title, course?.title, content.site.title].filter(Boolean).join(' · ') : ''
+  const title = ready && route.page !== 'ege' ? [lesson?.title, course?.title, content.site.title].filter(Boolean).join(' · ') : ''
   useEffect(() => {
     if (title) document.title = title
   }, [title])
@@ -68,6 +70,13 @@ export default function App() {
     return (
       <Suspense fallback={<div className="page muted">Открываем редактор…</div>}>
         <Admin />
+      </Suspense>
+    )
+
+  if (route.page === 'ege')
+    return (
+      <Suspense fallback={<div className="page muted">Открываем бланк…</div>}>
+        <Ege view={route.view} />
       </Suspense>
     )
 

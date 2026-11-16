@@ -15,12 +15,20 @@ describe('адреса страниц', () => {
     expect(parseRoute('#/admin/')).toEqual({ page: 'admin' })
   })
 
+  it('бланк ЕГЭ', () => {
+    expect(parseRoute('#/ege')).toEqual({ page: 'ege', view: 'check' })
+    expect(parseRoute('#/ege/')).toEqual({ page: 'ege', view: 'check' })
+    expect(parseRoute('#/ege/history')).toEqual({ page: 'ege', view: 'history' })
+    expect(parseRoute('#/ege/students')).toEqual({ page: 'ege', view: 'students' })
+    for (const v of ['check', 'history', 'students']) expect(parseRoute(href.ege(v))).toEqual({ page: 'ege', view: v })
+  })
+
   it('старая ссылка на урок', () => {
     expect(parseRoute('#/lesson/l1')).toEqual({ page: 'legacy-lesson', lessonId: 'l1' })
   })
 
   it('непонятный адрес', () => {
-    for (const hash of ['#/что-то', '#/course', '#/course/a/b', '#/course/a/lesson', '#/lesson', '#/admin/x'])
+    for (const hash of ['#/что-то', '#/course', '#/course/a/b', '#/course/a/lesson', '#/lesson', '#/admin/x', '#/ege/x', '#/ege/check', '#/ege/history/1'])
       expect(parseRoute(hash)).toEqual({ page: 'unknown' })
   })
 
