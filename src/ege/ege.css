@@ -23,7 +23,8 @@ body:has(.ege) { background: #F5F6F8; }
   body:has(.ege) { background: #101216; }
 }
 .ege *, .ege *::before, .ege *::after { box-sizing: border-box; }
-.ege button, .ege input, .ege select { font: inherit; color: inherit; }
+/* :where — чтобы сброс не перебивал цвета кнопок, заданные одним классом (.e-btn--pri, .e-pt) */
+:where(.ege) button, :where(.ege) input, :where(.ege) select { font: inherit; color: inherit; }
 .ege h1, .ege h2, .ege p, .ege ul { margin: 0; padding: 0; }
 .ege ul { list-style: none; }
 .ege a { color: inherit; text-decoration: none; }
