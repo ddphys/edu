@@ -1,0 +1,225 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Макеты тренажёра</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=STIX+Two+Text:ital,wght@0,400;0,600;1,400;1,600&family=Manrope:wght@500;600;700;800&family=JetBrains+Mono:wght@400;500;700&family=Inter:wght@400;500;600;700&display=swap">
+<style>
+*{box-sizing:border-box}
+body{margin:0}
+button{font:inherit;color:inherit;cursor:pointer}
+.sym{font-family:"STIX Two Text",serif;font-style:italic}
+.sym sub{font-style:normal;font-size:.62em}
+
+/* ================= A. Строгая схема ================= */
+.A{--bg:#f6f7fb;--card:#fff;--text:#2a2c35;--text-2:#5f6373;--muted:#8e93a6;--border:#e1e3ec;--line:#eceef3;--accent:#4a6cd4;--accent-soft:#eef2fd;
+  --green:#2e7d4f;--green-bg:#eef8f1;--red:#b9483c;--red-bg:#fdf1ef;--ink:#2a2c35;--fric:#d9612c;--vel:#4a6cd4;--body:#fff;--body2:#f3f4f8;--hl:#4a6cd4;
+  background:var(--bg);color:var(--text);font:16px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;min-height:100vh}
+.A .top{background:var(--card);border-bottom:1px solid var(--border)}
+.A .top div{max-width:920px;margin:0 auto;padding:14px 24px;display:flex;justify-content:space-between;font-weight:600;font-size:15px}
+.A .top .nav{white-space:nowrap;display:flex;gap:18px;color:var(--text-2);font-weight:500}
+.A .top .nav b{color:var(--accent);font-weight:600}
+.A .wrap{max-width:720px;margin:0 auto;padding:28px 24px 48px}
+.A .crumb{font-size:13px;color:var(--muted);margin-bottom:6px}
+.A h1{font-size:22px;font-weight:600;margin:0 0 18px}
+.A .card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:22px}
+.A .cond{font-size:17px;margin:0 0 6px}
+.A .fig{margin:8px 0 16px;border-top:1px solid var(--line);border-bottom:1px solid var(--line);padding:6px 0}
+.A .ask{font-size:15px;color:var(--text-2);margin:0 0 10px}
+.A .ask b{color:var(--text)}
+.A .step{font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:600;margin:18px 0 8px}
+.A .opts{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.A .opt{border:1px solid var(--border);background:var(--card);border-radius:12px;padding:11px 14px;text-align:left;font-size:15px}
+.A .opt.ok{border-color:#9fd2b3;background:var(--green-bg);color:var(--green)}
+.A .opt.bad{border-color:#f3cdc7;background:var(--red-bg);color:var(--red)}
+.A .opt.lock{color:var(--muted);background:#fafbfc}
+.A .hint{margin-top:16px;border-left:3px solid var(--fric);background:#fff6f1;padding:12px 14px;border-radius:0 12px 12px 0;font-size:15px}
+.A .hint .row{display:flex;gap:8px;margin-top:10px}
+.A .btn{border:1px solid var(--border);background:var(--card);border-radius:10px;padding:7px 14px;font-size:14px;font-weight:500}
+.A .btn.pri{background:var(--accent);border-color:var(--accent);color:#fff}
+.A .ex{margin-top:16px;border:1px solid var(--border);border-radius:14px;padding:16px}
+.A .seg{display:inline-flex;background:#f3f4f8;border-radius:10px;padding:3px;gap:2px;margin-bottom:8px}
+.A .seg span{padding:5px 12px;border-radius:8px;font-size:13px;font-weight:500;color:var(--text-2)}
+.A .seg span.on{background:#fff;color:var(--text);box-shadow:0 1px 2px rgba(0,0,0,.08)}
+.A .exsteps{margin:8px 0 0;padding-left:20px;font-size:15px;color:var(--text-2)}
+.A .exsteps li{margin:3px 0}
+.A .foot{display:flex;justify-content:space-between;align-items:center;margin-top:18px;color:var(--muted);font-size:14px}
+
+/* ================= B. Игровые карточки ================= */
+.B{--bg:#f2efe9;--card:#fff;--text:#16161d;--text-2:#55545e;--muted:#9a98a3;--accent:#5b4bff;--accent-soft:#ecebff;--green:#14a05a;--green-bg:#e3f7ec;--red:#e5484d;--red-bg:#ffe9e9;
+  --ink:#16161d;--bodyink:#16161d;--fric:#ff6a3d;--fric-text:#e0461c;--accent-deep:#3f31d6;--shadow:#e2ddd3;--soft:#f6f4ef;--seg:#ebe7df;--track:#e2ddd3;--key:#f2efe9;--vel:#5b4bff;--body:#ffd66b;--body2:#c9e7ff;--hl:#16161d;
+  background:var(--bg);color:var(--text);font:16px/1.45 Manrope,system-ui,sans-serif;min-height:100vh}
+.B .wrap{max-width:560px;margin:0 auto;padding:18px 18px 40px}
+.B .bar{display:flex;align-items:center;gap:12px;margin-bottom:14px}
+.B .x{width:36px;height:36px;border-radius:50%;background:var(--card);display:grid;place-items:center;font-weight:800;color:var(--muted)}
+.B .prog{flex:1;height:12px;border-radius:99px;background:var(--track);overflow:hidden}
+.B .prog i{display:block;height:100%;width:42%;background:var(--accent);border-radius:99px}
+.B .lvl{font-weight:800;font-size:13px;background:var(--card);border-radius:99px;padding:6px 12px}
+.B .card{background:var(--card);border-radius:28px;padding:20px;box-shadow:0 3px 0 var(--shadow)}
+.B .tag{display:inline-block;font-size:12px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;color:var(--accent);background:var(--accent-soft);border-radius:99px;padding:4px 10px}
+.B .cond{font-size:19px;font-weight:700;line-height:1.3;margin:10px 0 4px}
+.B .fig{margin:6px -6px 4px}
+.B .ask{font-size:15px;color:var(--text-2);font-weight:600;margin:0}
+.B .q{font-size:22px;font-weight:800;margin:18px 2px 10px;line-height:1.2}
+.B .q small{display:block;font-size:13px;font-weight:700;color:var(--muted);letter-spacing:.04em;text-transform:uppercase;margin-bottom:4px}
+.B .opts{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.B .opt{border:0;background:var(--card);color:var(--text);border-radius:18px;padding:16px 14px;font-size:16px;font-weight:700;text-align:left;box-shadow:0 3px 0 #e2ddd3}
+.B .opt.ok{background:var(--green-bg);color:var(--green);box-shadow:0 3px 0 #b6e6cb}
+.B .opt.bad{background:var(--red-bg);color:var(--red);box-shadow:0 3px 0 #ffc4c4}
+.B .opt.lock{opacity:.45}
+.B .opt .k{display:inline-grid;place-items:center;width:24px;height:24px;border-radius:8px;background:var(--key);font-size:12px;margin-right:8px;color:var(--muted)}
+.B .sheet{margin-top:16px;background:var(--card);border-radius:28px;padding:20px;box-shadow:0 3px 0 var(--shadow);border-top:6px solid var(--fric)}
+.B .sheet h3{margin:0 0 6px;font-size:20px;font-weight:800;color:var(--fric-text)}
+.B .sheet p{margin:0;color:var(--text-2);font-size:15.5px}
+.B .sheet .row{display:flex;gap:10px;margin-top:14px}
+.B .btn{border:0;border-radius:16px;padding:13px 18px;font-weight:800;font-size:15px;background:var(--soft);color:var(--text)}
+.B .btn.pri{background:var(--accent);color:#fff;flex:1;box-shadow:0 3px 0 var(--accent-deep)}
+.B .ex{margin-top:14px;background:var(--soft);border-radius:20px;padding:14px}
+.B .seg{display:inline-flex;background:var(--seg);border-radius:12px;padding:3px;margin-bottom:6px}
+.B .seg span{padding:6px 12px;border-radius:9px;font-size:13px;font-weight:700;color:var(--muted)}
+.B .seg span.on{background:var(--card);color:var(--text);box-shadow:0 1px 2px rgba(0,0,0,.1)}
+.B.dark{--bg:#121117;--card:#1d1c24;--text:#f1f0f5;--text-2:#b9b7c4;--muted:#7f7d8b;--accent:#7b6dff;--accent-soft:#2a2650;--accent-deep:#4b3fc0;
+  --green:#3fd486;--green-bg:#163325;--red:#ff7b7f;--red-bg:#3a1c1f;--ink:#e9e8ef;--fric:#ff7a52;--fric-text:#ff9b7a;--vel:#9d93ff;--body2:#2c4258;--hl:#ffd66b;
+  --shadow:#0a0a0e;--soft:#26252e;--seg:#14131a;--track:#2a2932;--key:#2a2932}
+.B.dark .opt{box-shadow:0 3px 0 var(--shadow)}
+.B.dark .opt.ok{box-shadow:0 3px 0 #1f5a3b}.B.dark .opt.bad{box-shadow:0 3px 0 #6b2a2e}
+/* ================= C. Чертёж ================= */
+.C{--bg:#0d1117;--card:#121821;--text:#e6edf3;--text-2:#9fb0c3;--muted:#62748a;--line:#1f2a37;--accent:#57d0ff;--green:#3ee08f;--red:#ff6b6b;
+  --ink:#cfe3f5;--fric:#ffb020;--vel:#57d0ff;--body:#152131;--body2:#101a27;--hl:#57d0ff;
+  background:var(--bg);color:var(--text);font:15px/1.5 Inter,system-ui,sans-serif;min-height:100vh;
+  background-image:linear-gradient(var(--line) 1px,transparent 1px),linear-gradient(90deg,var(--line) 1px,transparent 1px);background-size:28px 28px}
+.C .mono{font-family:"JetBrains Mono",monospace}
+.C .wrap{max-width:760px;margin:0 auto;padding:22px 20px 44px}
+.C .bar{display:flex;justify-content:space-between;align-items:center;font-size:12px;color:var(--muted);margin-bottom:14px;letter-spacing:.06em}
+.C .bar b{color:var(--accent);font-weight:500}
+.C .card{background:rgba(18,24,33,.92);border:1px solid #233144;border-radius:6px;padding:20px;position:relative}
+.C .card::before,.C .card::after{content:"";position:absolute;width:10px;height:10px;border:1.5px solid var(--accent)}
+.C .card::before{top:-1px;left:-1px;border-right:0;border-bottom:0}
+.C .card::after{bottom:-1px;right:-1px;border-left:0;border-top:0}
+.C .cond{font-size:17px;margin:0 0 4px;color:var(--text)}
+.C .ask{color:var(--text-2);margin:0}
+.C .ask b{color:var(--accent);font-weight:500}
+.C .fig{margin:10px 0 6px;border:1px dashed #263446;border-radius:4px;background:rgba(13,17,23,.6)}
+.C .step{font-size:12px;letter-spacing:.1em;color:var(--muted);margin:18px 0 8px}
+.C .step b{color:var(--text-2);font-weight:500}
+.C .opts{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.C .opt{border:1px solid #2a3a4f;background:#0f151d;border-radius:4px;padding:11px 12px;text-align:left;font-size:14.5px;color:var(--text)}
+.C .opt .k{color:var(--muted);margin-right:8px}
+.C .opt.ok{border-color:var(--green);color:var(--green);background:rgba(62,224,143,.07)}
+.C .opt.bad{border-color:var(--red);color:var(--red);background:rgba(255,107,107,.07)}
+.C .opt.lock{opacity:.35}
+.C .hint{margin-top:16px;border:1px solid rgba(255,176,32,.5);background:rgba(255,176,32,.06);border-radius:4px;padding:12px 14px}
+.C .hint .h{font-size:12px;color:var(--fric);letter-spacing:.1em;margin-bottom:4px}
+.C .hint .row{display:flex;gap:8px;margin-top:10px}
+.C .btn{border:1px solid #2a3a4f;background:#0f151d;border-radius:4px;padding:7px 14px;font-size:13px;color:var(--text)}
+.C .btn.pri{border-color:var(--accent);color:var(--accent)}
+.C .ex{margin-top:14px;border:1px solid #233144;border-radius:4px;padding:14px}
+.C .seg{display:inline-flex;border:1px solid #2a3a4f;border-radius:4px;margin-bottom:6px}
+.C .seg span{padding:5px 12px;font-size:12px;color:var(--muted)}
+.C .seg span.on{background:#1b2a3c;color:var(--accent)}
+.C .exsteps{margin:8px 0 0;padding-left:20px;color:var(--text-2);font-size:14.5px}
+
+/* сцена */
+.fig svg{width:100%;height:auto;display:block}
+.lab{font-family:"STIX Two Text",serif;font-style:italic;font-size:17px}
+.lsub{font-family:"STIX Two Text",serif;font-size:11px}
+.cap{font-size:12px}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<script>
+const P=new URLSearchParams(location.search), V=P.get('v')||'A', S=P.get('s')||'q';
+const FL='<span class="sym">F</span><sub>тр</sub>';
+
+function arrow(x1,y1,x2,y2,col,w){
+  const dx=x2-x1,dy=y2-y1,L=Math.hypot(dx,dy),ux=dx/L,uy=dy/L,h=9,hw=4;const bx=x2-ux*h,by=y2-uy*h;
+  return `<line x1="${x1}" y1="${y1}" x2="${bx}" y2="${by}" stroke="${col}" stroke-width="${w||2}" stroke-linecap="round"/><path d="M${x2} ${y2} L${bx-uy*hw} ${by+ux*hw} L${bx+uy*hw} ${by-ux*hw}Z" fill="${col}"/>`;
+}
+function vlab(x,y,v,sub,col,anchor){
+  return `<text x="${x}" y="${y}" fill="${col}" text-anchor="${anchor||'middle'}"><tspan class="lab">${v}</tspan>${sub?`<tspan class="lsub" dy="4">${sub}</tspan>`:''}</text>`+
+    `<line x1="${x-(anchor==='start'?-1:6)}" y1="${y-15}" x2="${x+(anchor==='start'?11:5)}" y2="${y-15}" stroke="${col}" stroke-width="1"/>`;
+}
+// Сцена: доска на полу, брусок на доске; доску тянут вправо, брусок отстаёт
+function scene(opt){
+  opt=opt||{};
+  const ink='var(--ink)',vel='var(--vel)',fr='var(--fric)';
+  const frame=opt.frame==='board';
+  let s=`<svg viewBox="0 0 400 210" role="img" aria-label="Брусок на доске">`;
+  s+=`<defs><pattern id="h${V}" width="7" height="7" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><line x1="0" y1="0" x2="0" y2="7" stroke="${ink}" stroke-opacity=".45" stroke-width="1"/></pattern></defs>`;
+  // пол
+  s+=`<rect x="10" y="176" width="380" height="10" fill="url(#h${V})"/><line x1="10" y1="176" x2="390" y2="176" stroke="${ink}" stroke-width="1.4"/>`;
+  if(V==='C'){ s+=`<text x="16" y="200" class="cap mono" fill="var(--muted)">ПОЛ · μ₂ = 0</text>`; }
+  // доска
+  const B=V==='B';
+  s+=`<rect x="40" y="146" width="250" height="30" rx="${B?7:1}" fill="var(--body2)" stroke="${ink}" stroke-width="${B?2.2:1.4}"/>`;
+  // брусок
+  const hl=opt.hl!==false;
+  s+=`<rect x="100" y="104" width="78" height="42" rx="${B?8:1}" fill="var(--body)" stroke="${hl?'var(--hl)':ink}" stroke-width="${hl?(B?3:2.2):1.4}"/>`;
+  s+=`<text x="139" y="131" text-anchor="middle" class="lab" fill="var(--bodyink,var(--ink))">m</text><text x="268" y="166" text-anchor="middle" class="lab" fill="${ink}">M</text>`;
+  // трос и F
+  s+=`<line x1="290" y1="161" x2="320" y2="161" stroke="${ink}" stroke-width="1.6"/>`+arrow(320,161,372,161,ink,2)+vlab(352,150,'F','',ink);
+  if(!frame){
+    s+=arrow(116,90,150,90,vel,2)+vlab(132,80,'v','1',vel);
+    s+=arrow(214,134,282,134,vel,2)+vlab(290,140,'v','2',vel,'start');
+    s+=`<text x="200" y="22" text-anchor="middle" class="cap" fill="var(--text-2)" style="font-family:inherit">${'v₂ > v₁: брусок отстаёт от доски'}</text>`;
+  } else {
+    s+=arrow(176,90,130,90,vel,2)+vlab(152,80,'v','отн',vel);
+    s+=`<text x="200" y="22" text-anchor="middle" class="cap" fill="var(--text-2)" style="font-family:inherit">Сидим на доске: брусок уезжает влево</text>`;
+  }
+  if(opt.fric){ s+=arrow(150,112,206,112,fr,2.6)+vlab(214,108,'F','тр',fr,'start'); }
+  return s+'</svg>';
+}
+
+const cond='Доску тянут вправо. Брусок проскальзывает по ней и отстаёт.';
+const ask='Сила трения на <b>брусок</b> со стороны доски';
+const T=[['Покоя','1'],['Скольжения','2'],['Трения нет','3'],['Не определить без расчёта','4']];
+const D=[['← Влево','1'],['Вправо →','2']];
+const ans=S==='ans';
+const tCls=i=>ans?(i===1?'ok':'lock'):'';
+const dCls=i=>ans?(i===0?'bad':'ok'):'lock';
+const steps=`<ol class="exsteps">
+<li>Брусок касается только доски — трение со стороны доски.</li>
+<li>Брусок скользит по доске → трение <b>скольжения</b>.</li>
+<li>Относительно доски брусок едет <b>влево</b> (он отстаёт).</li>
+<li>Трение скольжения — против относительной скорости: <b>вправо</b>.</li></ol>`;
+const hintText='Скорость считаем не от пола, а от доски. Доска обгоняет брусок, значит относительно доски брусок едет влево.';
+
+let html='';
+if(V==='A'){
+  html=`<div class="A"><div class="top"><div><span>Подготовка к олимпиадам по физике</span><span class="nav"><b>Тренажёры</b><span>0 XP</span></span></div></div>
+  <div class="wrap"><div class="crumb">Тренажёры / Сила трения / Уровень 4 · Тело на теле</div><h1>Задание 7</h1>
+  <div class="card"><p class="cond">${cond}</p><div class="fig">${scene({fric:ans})}</div>
+  <p class="ask">${ask}</p>
+  <div class="step">Шаг 1 · Какое это трение?</div><div class="opts">${T.map((t,i)=>`<button class="opt ${tCls(i)}">${t[0]}</button>`).join('')}</div>
+  <div class="step">Шаг 2 · Куда направлено?</div><div class="opts">${D.map((t,i)=>`<button class="opt ${dCls(i)}">${t[0]}</button>`).join('')}</div>
+  ${ans?`<div class="hint">${hintText}<div class="row"><button class="btn">Понял</button><button class="btn">Не понял</button></div></div>
+  <div class="ex"><div class="seg"><span>Смотрим из класса</span><span class="on">Сидим на доске</span></div><div class="fig" style="border:0;margin:0">${scene({frame:'board',fric:true})}</div>${steps}</div>`:''}
+  <div class="foot"><span>Верно 6 из 8</span>${ans?'<button class="btn pri">Дальше</button>':''}</div>
+  </div></div></div>`;
+}
+if(V==='B'){
+  html=`<div class="B${P.get('t')==='dark'?' dark':''}"><div class="wrap"><div class="bar"><span class="x">✕</span><div class="prog"><i></i></div><span class="lvl"><span style="color:var(--green)">✓ 6</span> из 8</span></div>
+  <div class="card"><span class="tag">Сила трения</span><p class="cond">${cond}</p><div class="fig">${scene({fric:ans})}</div><p class="ask">${ask.replace(/<\/?b>/g,'')}</p></div>
+  ${!ans?`<div class="q"><small>Шаг 1 из 2</small>Какое это трение?</div><div class="opts">${T.map((t,i)=>`<button class="opt"><span class="k">${t[1]}</span>${t[0]}</button>`).join('')}</div>`
+  :`<div class="q"><small>Шаг 2 из 2</small>Куда направлено?</div><div class="opts">${D.map((t,i)=>`<button class="opt ${dCls(i)}">${t[0]}</button>`).join('')}</div>
+  <div class="sheet"><h3>Не совсем: трение — вправо</h3><p>${hintText}</p>
+  <div class="ex"><div class="seg"><span>Из класса</span><span class="on">Сидим на доске</span></div><div class="fig" style="margin:0">${scene({frame:'board',fric:true})}</div></div>
+  <div class="row"><button class="btn">Не понял</button><button class="btn pri">Понял, дальше</button></div></div>`}
+  </div></div>`;
+}
+if(V==='C'){
+  html=`<div class="C"><div class="wrap"><div class="bar mono"><span>ТРЕНАЖЁРЫ / ТРЕНИЕ / <b>04 ТЕЛО НА ТЕЛЕ</b></span><span>#07</span></div>
+  <div class="card"><p class="cond">${cond}</p><p class="ask">${ask}</p><div class="fig">${scene({fric:ans})}</div>
+  <div class="step mono">01 / <b>ТИП ТРЕНИЯ</b></div><div class="opts">${T.map((t,i)=>`<button class="opt ${tCls(i)}"><span class="k mono">${t[1]}</span>${t[0]}</button>`).join('')}</div>
+  <div class="step mono">02 / <b>НАПРАВЛЕНИЕ</b></div><div class="opts">${D.map((t,i)=>`<button class="opt ${dCls(i)}"><span class="k mono">${i?'→':'←'}</span>${t[0].replace(/[←→] ?| ?[←→]/g,'')}</button>`).join('')}</div>
+  ${ans?`<div class="hint"><div class="h mono">ПОДСКАЗКА</div>${hintText}<div class="row"><button class="btn">Понял</button><button class="btn pri">Не понял</button></div></div>
+  <div class="ex"><div class="seg mono"><span>ИЗ КЛАССА</span><span class="on">СИДИМ НА ДОСКЕ</span></div><div class="fig" style="border:0;margin:0">${scene({frame:'board',fric:true})}</div>${steps}</div>`:''}
+  </div></div></div>`;
+}
+document.getElementById('app').innerHTML=html;
+</script>
+</body>
+</html>
