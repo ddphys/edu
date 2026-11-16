@@ -4,6 +4,9 @@
 //   #/course/<курс>                 — страница курса со списком уроков
 //   #/course/<курс>/lesson/<урок>   — урок
 //   #/course/<курс>/lesson/<урок>/print — версия урока для печати
+//   #/trainers                      — список тренажёров
+//   #/trainers/friction             — тренажёр «Сила трения»: карта уровней
+//   #/trainers/friction/<уровень>   — серия заданий уровня (1–7)
 //   #/admin                         — редактор курса
 //   #/ege, #/ege/history, #/ege/students — бланк проверки ЕГЭ (страница преподавателя, ссылки на сайте нет)
 //   #/lesson/<урок>                 — старая ссылка (когда курс был один): перенаправляется на новую
@@ -17,6 +20,9 @@ const decode = (s) => {
 }
 
 const EGE_VIEWS = ['history', 'students']
+// Тренажёры и число уровней у каждого. Новый тренажёр добавляется строкой сюда
+// (сам код тренажёра сюда не подключается: он грузится отдельным файлом).
+export const TRAINERS = { friction: 7 }
 
 export function parseRoute(hash) {
   const parts = String(hash ?? '')
@@ -28,6 +34,15 @@ export function parseRoute(hash) {
   if (parts[0] === 'admin' && parts.length === 1) return { page: 'admin' }
   if (parts[0] === 'ege' && parts.length === 1) return { page: 'ege', view: 'check' }
   if (parts[0] === 'ege' && parts.length === 2 && EGE_VIEWS.includes(parts[1])) return { page: 'ege', view: parts[1] }
+  if (parts[0] === 'trainers') {
+    if (parts.length === 1) return { page: 'trainers', view: 'list' }
+    const levels = Object.hasOwn(TRAINERS, parts[1]) ? TRAINERS[parts[1]] : 0
+    if (!levels) return { page: 'unknown' }
+    if (parts.length === 2) return { page: 'trainers', view: 'levels', trainer: parts[1] }
+    const level = /^[1-9]\d*$/.test(parts[2]) ? Number(parts[2]) : 0
+    if (parts.length === 3 && level >= 1 && level <= levels) return { page: 'trainers', view: 'play', trainer: parts[1], level }
+    return { page: 'unknown' }
+  }
   if (parts[0] === 'course' && parts.length === 2) return { page: 'course', courseId: parts[1] }
   if (parts[0] === 'course' && parts[2] === 'lesson' && parts.length === 4) return { page: 'lesson', courseId: parts[1], lessonId: parts[3] }
   if (parts[0] === 'course' && parts[2] === 'lesson' && parts[4] === 'print' && parts.length === 5)
@@ -42,6 +57,9 @@ export const href = {
   lesson: (courseId, lessonId) => `#/course/${encodeURIComponent(courseId)}/lesson/${encodeURIComponent(lessonId)}`,
   print: (courseId, lessonId) => `${href.lesson(courseId, lessonId)}/print`,
   admin: () => '#/admin',
+  trainers: () => '#/trainers',
+  trainer: (id) => `#/trainers/${encodeURIComponent(id)}`,
+  trainerLevel: (id, level) => `#/trainers/${encodeURIComponent(id)}/${level}`,
   ege: (view = 'check') => (view === 'check' ? '#/ege' : `#/ege/${view}`),
 }
 

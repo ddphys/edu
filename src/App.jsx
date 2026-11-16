@@ -15,6 +15,8 @@ const pct = (x) => Math.round(x * 100) + '%'
 const Admin = lazy(() => import('./admin/Admin.jsx'))
 // Бланк проверки ЕГЭ — тоже отдельным файлом, курсы ему не нужны
 const Ege = lazy(() => import('./ege/Ege.jsx'))
+// Тренажёры — тоже отдельным файлом: код и шрифты скачиваются, только когда ученик открыл тренажёр
+const Trainers = lazy(() => import('./trainers/Trainers.jsx'))
 
 const currentRoute = () => parseRoute(window.location.hash)
 
@@ -63,7 +65,7 @@ export default function App() {
     [api, course],
   )
 
-  const title = ready && route.page !== 'ege' ? [lesson?.title, course?.title, content.site.title].filter(Boolean).join(' · ') : ''
+  const title = ready && route.page !== 'ege' ? [route.page === 'trainers' ? 'Тренажёры' : lesson?.title, course?.title, content.site.title].filter(Boolean).join(' · ') : ''
   useEffect(() => {
     if (title) document.title = title
   }, [title])
@@ -100,6 +102,12 @@ export default function App() {
   let body
   if (route.page === 'catalog') body = <Catalog site={site} courses={courses} progress={progress} imageUrl={(c, name) => api.imageUrl(c.id, name)} />
   else if (route.page === 'legacy-lesson') body = <NotFound what="Урок" />
+  else if (route.page === 'trainers')
+    body = (
+      <Suspense fallback={<div className="muted">Открываем тренажёр…</div>}>
+        <Trainers route={route} />
+      </Suspense>
+    )
   else if (!course) body = <NotFound what={route.page === 'unknown' ? 'Адрес' : 'Курс'} />
   else if (route.page === 'course') body = <LessonList course={course} progress={progress.courses[course.id]} onReset={reset} />
   else if (!lesson) body = <NotFound what="Урок" />
@@ -122,6 +130,9 @@ export default function App() {
             )}
           </div>
           <div className="topbar__right">
+            <a className={`topbar__nav${route.page === 'trainers' ? ' is-on' : ''}`} href={href.trainers()}>
+              Тренажёры
+            </a>
             <ThemeToggle />
             <button className="xp" onClick={() => setShowRules((v) => !v)} title="Как начисляется опыт" aria-expanded={showRules}>
               {totalXp(progress)} XP <span className="xp__q">?</span>
@@ -157,7 +168,7 @@ export default function App() {
         )}
       </header>
 
-      <div className="page">{body}</div>
+      <div className={route.page === 'trainers' ? 'page page--tr' : 'page'}>{body}</div>
     </ImagesContext.Provider>
   )
 }
