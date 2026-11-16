@@ -53,6 +53,38 @@ function TaskGroup({ group, firstNumber, st, taskProps }) {
 }
 
 // course и lesson — открытая часть контента; прогресс и действия берутся из общего состояния
+// Отдельная задача урока. Решённая в прошлый раз свёрнута в строку и раскрывается по щелчку;
+// решённая только что остаётся открытой — ученик читает разбор.
+function TaskCard({ props, number }) {
+  const { task, state } = props
+  const [wasDone] = useState(state.status !== 'pending')
+  const [open, setOpen] = useState(false)
+  if (!wasDone)
+    return (
+      <div className="card">
+        <Task {...props} index={number - 1} hasNext={false} />
+      </div>
+    )
+  const ok = state.status === 'correct'
+  return (
+    <div className="card card--row">
+      <button type="button" className="task-row" aria-expanded={open} onClick={() => setOpen((v) => !v)}>
+        <span className={`task-row__mark ${ok ? 'is-ok' : ''}`} aria-hidden="true">
+          {ok ? '✓' : '–'}
+        </span>
+        <span className="task-row__title">
+          {number}. {task.title}
+        </span>
+        <span className="task-row__xp">{ok ? `+${state.xp} XP` : 'не засчитана'}</span>
+        <span className="task-row__chev" aria-hidden="true">
+          {open ? '▾' : '▸'}
+        </span>
+      </button>
+      {open && <Task {...props} index={number - 1} hasNext={false} showTitle={false} />}
+    </div>
+  )
+}
+
 // links: false — без переходов между страницами (предпросмотр в редакторе)
 export default function Lesson({ course, lesson, number, prev, next, links = true }) {
   const { progress, actions, revealedOf, viewer } = useStore()
@@ -109,8 +141,7 @@ export default function Lesson({ course, lesson, number, prev, next, links = tru
         </ul>
       </header>
 
-      <section className="section">
-        <h2 className="section-title">Запись занятия</h2>
+      <section className="section" aria-label="Запись занятия">
         <Video
           url={lesson.videoUrl}
           title={lesson.title}
@@ -127,7 +158,7 @@ export default function Lesson({ course, lesson, number, prev, next, links = tru
           <div className="hw-head">
             <h2 className="section-title">Домашнее задание</h2>
             <div className="hw-head__stat">
-              Решено {solved} из {tasks.length} · <b>{xpEarned} XP</b>
+              Решено {solved} из {tasks.length} · {xpEarned} XP
             </div>
           </div>
 
@@ -149,9 +180,7 @@ export default function Lesson({ course, lesson, number, prev, next, links = tru
               }
               count += 1
               return (
-                <div className="card" key={item.id}>
-                  <Task {...taskProps(item)} index={first - 1} hasNext={false} />
-                </div>
+                <TaskCard key={item.id} props={taskProps(item)} number={first} />
               )
             })}
           </div>

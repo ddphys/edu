@@ -24,7 +24,11 @@ function xpBreakdown(task, course, hints, errors, xp) {
 //   state    — сохранённое состояние, revealed — что уже можно показать (подсказки, разбор, ответ)
 //   actions  — { submit(input), hint(), skip() }: уходят в интерфейс api и возвращают результат
 //   canAttach — ученику разрешено прикладывать фото решения (у задачи должно быть включено attach)
-export default function Task({ course, task, index, state, revealed, actions, canAttach, onNext, hasNext }) {
+//   showTitle — показывать ли строку с номером и названием (у свёрнутой-развёрнутой задачи она уже есть)
+//
+// На экране главное — условие, поле ответа и кнопка «Ответить». Всё остальное (цена, подсказка,
+// «Я не знаю», фото решения) — тихим текстом, чтобы не отвлекать от задачи.
+export default function Task({ course, task, index, state, revealed, actions, canAttach, onNext, hasNext, showTitle = true }) {
   const type = typeOf(task)
   const View = views[type?.id]
   const hintCount = task.hintCount ?? 0
@@ -35,7 +39,8 @@ export default function Task({ course, task, index, state, revealed, actions, ca
   // Что сейчас введено — в том виде, который понимает тип задачи
   const [input, setInput] = useState(() => type?.emptyInput(task))
   const [confirmSkip, setConfirmSkip] = useState(false)
-  const [message, setMessage] = useState('')
+  // Сообщение под полем: { text, retry } — retry значит «это была неверная попытка»
+  const [message, setMessage] = useState(null)
   const [delta, setDelta] = useState(null) // всплывающее «−4» у плашки XP
   const [busy, setBusy] = useState(false)
 
@@ -68,7 +73,7 @@ export default function Task({ course, task, index, state, revealed, actions, ca
     try {
       return await action()
     } catch {
-      setMessage('Не получилось отправить. Проверьте связь и попробуйте ещё раз.')
+      setMessage({ text: 'Не получилось отправить. Проверьте связь и попробуйте ещё раз.' })
       return null
     } finally {
       setBusy(false)
@@ -87,12 +92,12 @@ export default function Task({ course, task, index, state, revealed, actions, ca
     const result = await run(() => actions.submit(input))
     if (!result) return
     // Ввод не разобран — это опечатка, а не ошибка в решении: XP не снимается
-    if (result.kind === 'invalid') return setMessage(result.message)
-    if (result.kind === 'correct') return setMessage('')
+    if (result.kind === 'invalid') return setMessage({ text: result.message })
+    if (result.kind === 'correct') return setMessage(null)
     if (result.kind !== 'wrong') return
     setNow(Date.now())
     showDelta(result.xpLost)
-    setMessage(result.xpLost > 0 ? `${result.note}, −${result.xpLost} XP. Попробуйте ещё раз.` : `${result.note}. Попробуйте ещё раз.`)
+    setMessage({ text: result.xpLost > 0 ? `${result.note}, −${result.xpLost} XP.` : `${result.note}.`, retry: true })
     setInput(type.emptyInput(task))
   }
 
@@ -100,7 +105,7 @@ export default function Task({ course, task, index, state, revealed, actions, ca
     const result = await run(actions.skip)
     if (!result) return
     setConfirmSkip(false)
-    setMessage('')
+    setMessage(null)
   }
 
   const shownHints = revealed?.hints ?? []
@@ -108,10 +113,20 @@ export default function Task({ course, task, index, state, revealed, actions, ca
   const nextHintCost = potential - calcXp(task, course, hintsUsed + 1, errors)
   const nudge = errors > 0 && hintsLeft
 
+  const attach = task.attach && canAttach ? <Attach courseId={course.id} taskId={task.id} /> : null
+  const showLinks = !done && !confirmSkip
+  const pauseText = `Сделайте паузу и перепроверьте решение — ответить можно через ${lockLeft}\u00a0с.`
+
   return (
     <div className="task">
       <div className="task__head">
-        <span>Задача {index + 1}</span>
+        {showTitle ? (
+          <h3 className="task__title">
+            {index + 1}. {task.title}
+          </h3>
+        ) : (
+          <span />
+        )}
         {!done && (
           <span className="xp-pill" title={`Максимум за задачу — ${taskMaxXp(task, course)} XP`}>
             {potential} XP
@@ -123,10 +138,9 @@ export default function Task({ course, task, index, state, revealed, actions, ca
           </span>
         )}
       </div>
-      <h3 className="task__title">{task.title}</h3>
       <MathText text={task.text} className="task__text" />
 
-      <form id={`f-${task.id}`} onSubmit={submit}>
+      <form id={`f-${task.id}`} onSubmit={submit} className={`answer ${type.inline?.(task) ? 'answer--inline' : 'answer--stack'}`}>
         <View
           task={task}
           state={state}
@@ -135,20 +149,54 @@ export default function Task({ course, task, index, state, revealed, actions, ca
           input={input}
           setInput={(value) => {
             setInput(value)
-            setMessage('')
+            setMessage(null)
           }}
         />
+        {!done && (
+          <button className="btn btn--primary" type="submit" disabled={lockLeft > 0 || busy}>
+            {lockLeft > 0 ? `Ответить (${lockLeft} с)` : 'Ответить'}
+          </button>
+        )}
       </form>
 
-      {message && !done && <div className="msg">{message}</div>}
-      {!done && lockLeft > 0 && (
-        <div className="msg msg--pause">
-          Сделайте паузу и перепроверьте решение{hintsLeft ? ' — или возьмите подсказку' : ''}. Ответить можно
-          через {lockLeft}{' '}с.
+      {/* Ошибка и пауза — одним сообщением */}
+      {!done && (message || lockLeft > 0) && (
+        <div className={`msg ${message ? '' : 'msg--pause'}`} role="status">
+          {message?.text}
+          {message?.retry ? (lockLeft > 0 ? ` ${pauseText}` : ' Попробуйте ещё раз.') : ''}
+          {!message && pauseText}
         </div>
       )}
 
-      {task.attach && canAttach && <Attach courseId={course.id} taskId={task.id} />}
+      {(showLinks || attach) && (
+        <div className="task__more">
+          {showLinks && hintsLeft && (
+            <button type="button" className={`quiet ${nudge ? 'quiet--nudge' : ''}`} onClick={useHint} disabled={busy}>
+              {nudge ? 'Застряли? ' : ''}Подсказка{nextHintCost > 0 ? ` −${nextHintCost} XP` : ''}
+            </button>
+          )}
+          {showLinks && (
+            <button type="button" className="quiet" onClick={() => setConfirmSkip(true)}>
+              Я не знаю
+            </button>
+          )}
+          {attach}
+        </div>
+      )}
+
+      {!done && confirmSkip && (
+        <div className="skip-banner">
+          <span>Показать ответ и разбор? XP за задачу не будет.</span>
+          <span className="skip-banner__btns">
+            <button type="button" className="btn btn--ghost btn--small" onClick={skip} disabled={busy}>
+              Показать ответ
+            </button>
+            <button type="button" className="quiet" onClick={() => setConfirmSkip(false)}>
+              Вернуться к задаче
+            </button>
+          </span>
+        </div>
+      )}
 
       {shownHints.map((h, i) => (
         <div className="hint" key={i}>
@@ -161,47 +209,8 @@ export default function Task({ course, task, index, state, revealed, actions, ca
 
       {done && revealed?.solution && (
         <div className="solution">
-          <div className="solution__title">Решение задачи:</div>
+          <div className="solution__title">Решение</div>
           <MathText text={revealed.solution} />
-        </div>
-      )}
-
-      {!done && confirmSkip && (
-        <div className="skip-banner">
-          <div className="skip-banner__title">Если посмотреть ответ, вам не начислятся XP</div>
-          <div className="skip-banner__btns">
-            <button className="btn btn--primary" onClick={() => setConfirmSkip(false)}>
-              Вернуться и решить
-            </button>
-            <button className="btn btn--ghost" onClick={skip} disabled={busy}>
-              Посмотреть ответ
-            </button>
-          </div>
-        </div>
-      )}
-
-      {!done && !confirmSkip && (
-        <div className="actions">
-          <div className="actions__btns">
-            {hintCount > 0 && (
-              <button
-                type="button"
-                className={`btn btn--ghost ${nudge ? 'btn--nudge' : ''}`}
-                onClick={useHint}
-                disabled={!hintsLeft || busy}
-              >
-                {!hintsLeft
-                  ? 'Подсказки закончились'
-                  : `${nudge ? 'Застряли? ' : ''}Подсказка${nextHintCost > 0 ? ` −${nextHintCost} XP` : ''}`}
-              </button>
-            )}
-            <button type="button" className="btn btn--ghost" onClick={() => setConfirmSkip(true)}>
-              Я не знаю
-            </button>
-            <button className="btn btn--primary" type="submit" form={`f-${task.id}`} disabled={lockLeft > 0 || busy}>
-              {lockLeft > 0 ? `Ответить (${lockLeft} с)` : 'Ответить'}
-            </button>
-          </div>
         </div>
       )}
 

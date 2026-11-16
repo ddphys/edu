@@ -163,11 +163,11 @@ textarea.adm-input { resize: vertical; line-height: 1.45; min-height: 40px; }
 .adm-preview .lesson__head h1 { font-size: 26px; }
 .adm-preview .hero h1 { font-size: 28px; }
 .adm-preview .section { margin-top: 40px; }
-.adm-preview .answers { grid-template-columns: 1fr; }
 .adm-preview .part { grid-template-columns: 1fr; gap: 4px; }
-.adm-preview .actions__btns { width: 100%; }
-.adm-preview .actions__btns .btn { flex: 1; padding: 11px 14px; white-space: nowrap; }
-.adm-preview .actions__btns .btn--primary { flex-basis: 100%; order: -1; }
+.adm-preview .answers { max-width: none; }
+.adm-preview .answer--stack > .btn { width: 100%; }
+.adm-preview .task-row { padding: 14px 16px; }
+.adm-preview .card--row > .task { padding: 2px 20px 20px; }
 .adm-preview .lesson-row { grid-template-columns: 36px 1fr; gap: 6px 14px; padding: 18px; align-items: start; }
 .adm-preview .lesson-row__num { width: 36px; height: 36px; }
 .adm-preview .lesson-row__progress { grid-column: 2; }

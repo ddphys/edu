@@ -1,8 +1,7 @@
 import { answerInputMode } from '../../lib.js'
 import { getParts } from './index.js'
 
-// Поля числового ответа. Одно поле показывается рядом с «Правильным ответом»,
-// несколько — списком с подписями.
+// Поля числового ответа: одно поле или несколько с подписями.
 //   input / setInput — что сейчас введено (строка на каждое поле)
 //   revealed.answer.parts — верные значения, которые уже можно показать
 export default function NumberView({ task, state, done, revealed, input, setInput }) {
@@ -39,24 +38,33 @@ export default function NumberView({ task, state, done, revealed, input, setInpu
       </div>
     )
 
-  return (
-    <div className="answers">
-      <label>
-        <span>Правильный ответ:</span>
-        <input readOnly disabled={!done} value={done ? right(0) : '•••'} />
-      </label>
-      <label>
-        <span>Ваш ответ:</span>
+  // До ответа — одно поле. После — свой ответ и, если он не верный, правильный.
+  if (!done)
+    return (
+      <div className="answers">
         <input
           inputMode={answerInputMode}
           autoComplete="off"
-          className={cls(0)}
-          readOnly={done}
+          aria-label="Ваш ответ"
           value={shownValue(0)}
-          placeholder={done ? 'Вы не указали этот ответ' : 'Введите число'}
+          placeholder="Ваш ответ — число"
           onChange={(e) => change(0, e.target.value)}
         />
+      </div>
+    )
+
+  return (
+    <div className="answers answers--done">
+      <label>
+        <span>Ваш ответ</span>
+        <input readOnly className={cls(0)} value={shownValue(0)} placeholder="Нет ответа" />
       </label>
+      {state.status !== 'correct' && (
+        <label>
+          <span>Правильный ответ</span>
+          <input readOnly value={right(0)} />
+        </label>
+      )}
     </div>
   )
 }

@@ -4,6 +4,7 @@ import { fmtBytes } from '../images.js'
 
 // Фото своего решения к задаче. Доступно, если у задачи включено «можно приложить решение»
 // и это разрешено ученику (позже — по тарифу). На XP не влияет.
+// Пока фото нет — это одна тихая ссылка; миниатюры и пояснение появляются после первого фото.
 export default function Attach({ courseId, taskId }) {
   const { api } = useStore()
   const [items, setItems] = useState([])
@@ -61,7 +62,7 @@ export default function Attach({ courseId, taskId }) {
   return (
     <div
       ref={box}
-      className={`attach ${over ? 'is-over' : ''}`}
+      className={`attach ${items.length ? 'attach--filled' : ''} ${over ? 'is-over' : ''}`}
       onDragOver={(e) => {
         e.preventDefault()
         setOver(true)
@@ -73,10 +74,6 @@ export default function Attach({ courseId, taskId }) {
         addFiles(e.dataTransfer.files)
       }}
     >
-      <div className="attach__title">Своё решение</div>
-      <p className="attach__note">
-        Сфотографируйте решение из тетради и приложите к задаче. Пока фото хранится только на этом устройстве.
-      </p>
       {items.length > 0 && (
         <ul className="attach__list">
           {items.map((item, i) => (
@@ -91,8 +88,9 @@ export default function Attach({ courseId, taskId }) {
           ))}
         </ul>
       )}
+      {items.length > 0 && <p className="attach__note">Фото решения хранится только на этом устройстве.</p>}
       {error && <div className="msg">{error}</div>}
-      <label className={`btn btn--ghost attach__add ${busy ? 'is-busy' : ''}`}>
+      <label className={`quiet attach__add ${busy ? 'is-busy' : ''}`}>
         <input
           type="file"
           accept="image/*"
@@ -104,7 +102,7 @@ export default function Attach({ courseId, taskId }) {
             addFiles(files)
           }}
         />
-        {busy ? 'Загружаем…' : items.length ? 'Добавить ещё фото' : 'Приложить фото решения'}
+        {busy ? 'Загружаем…' : items.length ? '＋ Добавить ещё фото' : '＋ Приложить фото решения'}
       </label>
     </div>
   )
