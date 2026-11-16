@@ -2,7 +2,7 @@ import { useRef, useState } from 'react'
 import { HEAVY_IMAGE_BYTES } from '../content/format.js'
 import { imageMarkup } from '../content/text.js'
 import { fmtBytes } from '../images.js'
-import { Issues, useAdmin } from './fields.jsx'
+import { Issues, imageFiles, useAdmin } from './fields.jsx'
 import { imageUsage } from './model.js'
 
 // Картинки курса: добавить с компьютера, заменить, удалить, посмотреть вес и где используется
@@ -16,6 +16,12 @@ export default function ImagesPanel({ ci }) {
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
   const [copied, setCopied] = useState('')
+  const [over, setOver] = useState(false)
+
+  const addAll = (files) =>
+    run(async () => {
+      for (const f of files) await addImage(f)
+    })
 
   const run = async (fn) => {
     setError('')
@@ -44,14 +50,26 @@ export default function ImagesPanel({ ci }) {
       <section className="adm-card">
         <h2>Картинки курса</h2>
         <p className="adm-hint">
-          Чертежи к задачам, обложка, фото преподавателя. В текст картинка вставляется кнопкой «＋ Картинка» под полем или
-          записью <code>![Подпись](имя-файла.png)</code>. Тяжёлые фотографии и снимки экрана редактор сам уменьшает
-          до 1600 пикселей по большей стороне и сжимает; оригинал сохраняется и попадает в архив в папку <code>originals</code>.
+          Чертежи к задачам, обложка, фото преподавателя. Тяжёлые фотографии и снимки экрана сжимаются сами, оригинал
+          сохраняется.
         </p>
-        <div className="adm-add-row">
+        <div
+          className={`adm-drop ${over ? 'is-over' : ''}`}
+          onDragOver={(e) => {
+            e.preventDefault()
+            setOver(true)
+          }}
+          onDragLeave={() => setOver(false)}
+          onDrop={(e) => {
+            e.preventDefault()
+            setOver(false)
+            addAll(imageFiles(e.dataTransfer))
+          }}
+        >
           <button type="button" className="btn btn--primary adm-btn" disabled={busy} onClick={() => file.current.click()}>
             {busy ? 'Загружаем…' : '＋ Добавить с компьютера'}
           </button>
+          <span>или перетащите файлы сюда, или вставьте картинку из буфера — Ctrl+V</span>
           <input
             ref={file}
             type="file"
@@ -61,9 +79,7 @@ export default function ImagesPanel({ ci }) {
             onChange={(e) => {
               const files = [...e.target.files]
               e.target.value = ''
-              run(async () => {
-                for (const f of files) await addImage(f)
-              })
+              addAll(files)
             }}
           />
           <input

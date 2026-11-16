@@ -7,6 +7,14 @@ import { fmtNumber, parseNumber } from '../lib.js'
 export const AdminContext = createContext(null)
 export const useAdmin = () => useContext(AdminContext)
 
+// Как назвать картинку, вставленную из буфера обмена: у неё нет своего имени («image.png»),
+// поэтому берём id задачи или вопроса, в который её вставили.
+export const ImageHint = createContext('')
+const NAMELESS = /^(image|изображение|pasted[ _-]?image|без[ _]?названия|untitled)\b/i
+
+// Картинки из буфера обмена или из перетащенных файлов
+export const imageFiles = (dataTransfer) => [...(dataTransfer?.files ?? [])].filter((f) => f.type.startsWith('image/'))
+
 // Замечания проверки корректности, относящиеся к полю с адресом path
 export function Issues({ path }) {
   const { issuesByPath, update } = useAdmin()
@@ -166,6 +174,8 @@ export function RowTools({ onUp, onDown, onDelete, what }) {
 // compact — короткое поле (вариант ответа, подсказка): кнопки стоят справа от него.
 export function Rich({ label, path, hint, value, onChange, rows = 3, placeholder, compact = false }) {
   const { courseImages, addImage } = useAdmin()
+  const nameHint = useContext(ImageHint)
+  const [over, setOver] = useState(false)
   const area = useRef(null)
   const file = useRef(null)
   const [menu, setMenu] = useState(false)
@@ -185,12 +195,18 @@ export function Rich({ label, path, hint, value, onChange, rows = 3, placeholder
     setMenu(false)
   }
 
-  const upload = async (f) => {
-    if (!f) return
+  const upload = async (files) => {
+    const list = [files].flat().filter(Boolean)
+    if (!list.length) return
     setError('')
     setBusy(true)
     try {
-      insert(imageMarkup(await addImage(f)))
+      const marks = []
+      for (const f of list) {
+        const named = nameHint && NAMELESS.test(f.name || 'image') ? new File([f], nameHint, { type: f.type }) : f
+        marks.push(imageMarkup(await addImage(named)))
+      }
+      insert(marks.join('\n\n'))
     } catch (e) {
       setError(e.message)
     } finally {
@@ -198,17 +214,35 @@ export function Rich({ label, path, hint, value, onChange, rows = 3, placeholder
     }
   }
 
+  // Ctrl+V со снимком экрана или скопированной картинкой
   const onPaste = (e) => {
-    const image = [...(e.clipboardData?.files ?? [])].find((f) => f.type.startsWith('image/'))
-    if (!image) return
+    const images = imageFiles(e.clipboardData)
+    if (!images.length) return
     e.preventDefault()
-    upload(image)
+    upload(images)
+  }
+
+  // Файл с компьютера можно просто бросить на поле
+  const dragProps = {
+    onDragOver: (e) => {
+      if (![...e.dataTransfer.types].includes('Files')) return
+      e.preventDefault()
+      setOver(true)
+    },
+    onDragLeave: () => setOver(false),
+    onDrop: (e) => {
+      setOver(false)
+      const images = imageFiles(e.dataTransfer)
+      if (!images.length) return
+      e.preventDefault()
+      upload(images)
+    },
   }
 
   return (
     <Field label={label} path={path} hint={hint}>
       <div className={compact ? 'adm-rich adm-rich--compact' : 'adm-rich'}>
-        <textarea ref={area} className="adm-input" aria-label={label} rows={rows} value={text} placeholder={placeholder} onChange={(e) => onChange(e.target.value)} onPaste={onPaste} />
+        <textarea ref={area} className={`adm-input ${over ? 'is-over' : ''}`} aria-label={label} rows={rows} value={text} placeholder={placeholder} onChange={(e) => onChange(e.target.value)} onPaste={onPaste} {...dragProps} />
         <div className="adm-rich__bar">
           <button type="button" className="adm-link" aria-label={`${label}: вставить картинку`} onClick={() => setMenu((v) => !v)} disabled={busy}>
             {busy ? 'Загружаем…' : '＋ Картинка'}

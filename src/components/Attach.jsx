@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useStore } from '../store.jsx'
 import { fmtBytes } from '../images.js'
 
@@ -9,6 +9,8 @@ export default function Attach({ courseId, taskId }) {
   const [items, setItems] = useState([])
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
+  const [over, setOver] = useState(false)
+  const box = useRef(null)
 
   useEffect(() => {
     let alive = true
@@ -21,19 +23,35 @@ export default function Attach({ courseId, taskId }) {
     }
   }, [api, courseId, taskId])
 
-  async function add(e) {
-    const files = [...e.target.files]
-    e.target.value = ''
+  async function addFiles(files) {
+    const images = [...files].filter((f) => f.type.startsWith('image/'))
+    if (!images.length) return
     setError('')
     setBusy(true)
     try {
-      for (const file of files) setItems(await api.addAttachment(courseId, taskId, file))
+      for (const file of images) setItems(await api.addAttachment(courseId, taskId, file))
     } catch (err) {
       setError(err.message)
     } finally {
       setBusy(false)
     }
   }
+  const latest = useRef(addFiles)
+  latest.current = addFiles
+
+  // Скопированную картинку можно вставить (Ctrl+V), пока курсор стоит в этой задаче
+  useEffect(() => {
+    const task = box.current?.closest('.task')
+    if (!task) return
+    const onPaste = (e) => {
+      const files = [...(e.clipboardData?.files ?? [])].filter((f) => f.type.startsWith('image/'))
+      if (!files.length) return
+      e.preventDefault()
+      latest.current(files)
+    }
+    task.addEventListener('paste', onPaste)
+    return () => task.removeEventListener('paste', onPaste)
+  }, [])
 
   async function remove(id) {
     setError('')
@@ -41,11 +59,23 @@ export default function Attach({ courseId, taskId }) {
   }
 
   return (
-    <div className="attach">
+    <div
+      ref={box}
+      className={`attach ${over ? 'is-over' : ''}`}
+      onDragOver={(e) => {
+        e.preventDefault()
+        setOver(true)
+      }}
+      onDragLeave={() => setOver(false)}
+      onDrop={(e) => {
+        e.preventDefault()
+        setOver(false)
+        addFiles(e.dataTransfer.files)
+      }}
+    >
       <div className="attach__title">Своё решение</div>
       <p className="attach__note">
-        Сфотографируйте решение из тетради и приложите его к задаче. Пока фото хранится только на этом
-        устройстве — проверка решений появится позже.
+        Сфотографируйте решение из тетради и приложите к задаче. Пока фото хранится только на этом устройстве.
       </p>
       {items.length > 0 && (
         <ul className="attach__list">
@@ -63,7 +93,17 @@ export default function Attach({ courseId, taskId }) {
       )}
       {error && <div className="msg">{error}</div>}
       <label className={`btn btn--ghost attach__add ${busy ? 'is-busy' : ''}`}>
-        <input type="file" accept="image/*" multiple onChange={add} disabled={busy} />
+        <input
+          type="file"
+          accept="image/*"
+          multiple
+          disabled={busy}
+          onChange={(e) => {
+            const files = [...e.target.files]
+            e.target.value = ''
+            addFiles(files)
+          }}
+        />
         {busy ? 'Загружаем…' : items.length ? 'Добавить ещё фото' : 'Приложить фото решения'}
       </label>
     </div>

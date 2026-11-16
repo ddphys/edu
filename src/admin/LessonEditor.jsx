@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { VIDEO_PLATFORMS, isGroup, parseNumber, parseVideo, taskMaxXp } from '../lib.js'
 import { types, typeOf } from '../types/index.js'
-import { Check, Field, Issues, Lines, Num, Rich, RowTools, Select, Text, useAdmin } from './fields.jsx'
+import { Check, Field, ImageHint, Issues, Lines, Num, Rich, RowTools, Select, Text, useAdmin } from './fields.jsx'
 import { countUnder } from './issues.js'
 import { moveItem, newGroup, newQuizItem, newTask, shift, uid } from './model.js'
 import { typeEditors } from './typeEditors.js'
@@ -83,7 +83,8 @@ function QuizFields({ lesson, change, path }) {
         const qPath = `${path}/quiz/${i}`
         const options = q.options ?? []
         return (
-          <div className="adm-sub" key={q._key}>
+          <ImageHint.Provider key={q._key} value={`${lesson.id}-q${i + 1}`}>
+          <div className="adm-sub">
             <div className="adm-sub__head">
               <b>Вопрос {i + 1}</b>
               <Badge path={qPath} />
@@ -123,6 +124,7 @@ function QuizFields({ lesson, change, path }) {
             <Field path={`${qPath}/correct`} />
             <Rich label="Пояснение после ответа" path={`${qPath}/explain`} rows={2} value={q.explain} onChange={(v) => change((l) => void (l.quiz[i].explain = v))} />
           </div>
+          </ImageHint.Provider>
         )
       })}
       <button
@@ -148,8 +150,11 @@ function QuizFields({ lesson, change, path }) {
 
 // ---------- Задача ----------
 function TaskEditor({ task, number, path, change, course, tools, drag }) {
-  const { isOpen, toggleOpen } = useAdmin()
+  const { isOpen, toggleOpen, issuesByPath } = useAdmin()
   const open = isOpen(task._key)
+  // id и точная цена нужны редко — они свёрнуты, пока к ним нет замечаний
+  const [more, setMore] = useState(false)
+  const moreOpen = more || issuesByPath.has(`${path}/id`) || issuesByPath.has(`${path}/xp`)
   const type = typeOf(task)
   const Editor = typeEditors[type?.id]
   const hints = task.hints ?? []
@@ -165,7 +170,7 @@ function TaskEditor({ task, number, path, change, course, tools, drag }) {
   }
 
   const levels = [
-    ['', `По умолчанию (уровень ${course.defaultLevel} — ${course.levelXp?.[course.defaultLevel]} XP)`],
+    ['', `Обычная — ${course.levelXp?.[course.defaultLevel]} XP`],
     ...[1, 2, 3, 4, 5].map((l) => [String(l), `${l} — ${course.levelXp?.[l]} XP`]),
   ]
 
@@ -187,21 +192,18 @@ function TaskEditor({ task, number, path, change, course, tools, drag }) {
       </div>
 
       {open && (
+        <ImageHint.Provider value={task.id}>
         <div className="adm-task__body">
-          <div className="adm-row adm-row--3">
-            <Text label="id задачи" path={`${path}/id`} hint="По id хранится прогресс учеников" value={task.id} onChange={(v) => change((t) => void (t.id = v.trim()))} />
-            <Select label="Тип задачи" path={`${path}/type`} hint={type?.hint} value={task.type ?? 'number'} onChange={setType} options={Object.values(types).map((t) => [t.id, t.title])} />
+          <div className="adm-row adm-row--head">
+            <Text label="Название" path={`${path}/title`} value={task.title} onChange={(v) => change((t) => void (t.title = v))} />
+            <Select label="Тип" path={`${path}/type`} value={task.type ?? 'number'} onChange={setType} options={Object.values(types).map((t) => [t.id, t.title])} />
             <Select label="Сложность" path={`${path}/level`} value={task.level ? String(task.level) : ''} onChange={(v) => change((t) => void (v ? (t.level = Number(v)) : delete t.level))} options={levels} />
           </div>
-          <div className="adm-row adm-row--title">
-            <Text label="Название" path={`${path}/title`} value={task.title} onChange={(v) => change((t) => void (t.title = v))} />
-            <Num label="Точная цена, XP" path={`${path}/xp`} hint={`Пусто — по сложности (${taskMaxXp({ level: task.level }, course)} XP)`} value={task.xp} onChange={(v) => change((t) => void (v === undefined ? delete t.xp : (t.xp = v)))} />
-          </div>
-          <Rich label="Условие" path={`${path}/text`} rows={5} value={task.text} onChange={(v) => change((t) => void (t.text = v))} hint="Формулы: $...$ в строке, $$...$$ отдельной строкой. Жирный: **текст**. Пустая строка — новый абзац." />
+          <Rich label="Условие" path={`${path}/text`} rows={5} value={task.text} onChange={(v) => change((t) => void (t.text = v))} hint="Формулы: $...$ в строке, $$...$$ отдельной строкой. Картинку можно вставить из буфера (Ctrl+V) или перетащить на поле." />
 
           {Editor ? <Editor task={task} change={change} path={path} /> : <div className="adm-issue adm-issue--error">Для этого типа задачи нет формы в редакторе.</div>}
 
-          <Field label="Подсказки" hint="Открываются по одной, каждая стоит ученику часть XP." path={`${path}/hints`}>
+          <Field label="Подсказки" path={`${path}/hints`}>
             {hints.map((h, i) => (
               <div className="adm-option" key={i}>
                 <Rich label={`Подсказка ${i + 1}`} path={`${path}/hints/${i}`} rows={2} value={h} onChange={(v) => change((t) => void (t.hints[i] = v))} />
@@ -218,16 +220,16 @@ function TaskEditor({ task, number, path, change, course, tools, drag }) {
             </button>
           </Field>
 
-          <Rich label="Разбор решения" path={`${path}/solution`} rows={4} value={task.solution} onChange={(v) => change((t) => void (t.solution = v))} hint="Показывается после ответа или «Я не знаю»." />
+          <Rich label="Разбор решения" path={`${path}/solution`} rows={4} value={task.solution} onChange={(v) => change((t) => void (t.solution = v))} />
 
           <Check
             label="Можно приложить фото решения"
-            hint="Ученик вводит ответ как обычно и дополнительно может сфотографировать своё решение. Пока фото хранится только в его браузере."
+            hint="Ответ ученик вводит как обычно, фото решения — дополнительно."
             checked={task.attach}
             onChange={(v) => change((t) => void (v ? (t.attach = true) : delete t.attach))}
           />
           {(task.attach || rubric.length > 0) && (
-            <Field label="Критерии проверки решения" hint="Что должно быть в решении. Ученик их не видит — они понадобятся для проверки решений." path={`${path}/rubric`}>
+            <Field label="Критерии проверки решения" hint="Что должно быть в решении. Ученик их не видит." path={`${path}/rubric`}>
               {rubric.map((r, i) => (
                 <div className="adm-option" key={i}>
                   <Text label={`Критерий ${i + 1}`} path={`${path}/rubric/${i}`} value={r} onChange={(v) => change((t) => void (t.rubric[i] = v))} />
@@ -239,7 +241,20 @@ function TaskEditor({ task, number, path, change, course, tools, drag }) {
               </button>
             </Field>
           )}
+
+          <div className="adm-more">
+            <button type="button" className="adm-more__toggle" aria-expanded={moreOpen} onClick={() => setMore((v) => !v)}>
+              {moreOpen ? '▾' : '▸'} Дополнительно: id и точная цена
+            </button>
+            {moreOpen && (
+              <div className="adm-row">
+                <Text label="id задачи" path={`${path}/id`} hint="По id хранится прогресс учеников — у опубликованной задачи его лучше не менять" value={task.id} onChange={(v) => change((t) => void (t.id = v.trim()))} />
+                <Num label="Точная цена, XP" path={`${path}/xp`} hint={`Пусто — по сложности (${taskMaxXp({ level: task.level }, course)} XP)`} value={task.xp} onChange={(v) => change((t) => void (v === undefined ? delete t.xp : (t.xp = v)))} />
+              </div>
+            )}
+          </div>
         </div>
+        </ImageHint.Provider>
       )}
     </div>
   )

@@ -10,7 +10,7 @@ import { plural } from '../lib.js'
 import { buildArchive, readArchive } from './archive.js'
 import { CourseEditor, SiteEditor } from './CourseEditor.jsx'
 import * as draft from './draft.js'
-import { AdminContext } from './fields.jsx'
+import { AdminContext, imageFiles } from './fields.jsx'
 import ImagesPanel from './ImagesPanel.jsx'
 import { draftIssues, indexIssues } from './issues.js'
 import LessonEditor, { Badge } from './LessonEditor.jsx'
@@ -230,6 +230,26 @@ export default function Admin() {
       },
     }
   }, [sel.course, update])
+
+  // Ctrl+V вне текстового поля: картинка из буфера просто добавляется в картинки курса.
+  // (В поле с текстом вставку обрабатывает само поле — картинка сразу встаёт в текст.)
+  useEffect(() => {
+    const onPaste = async (e) => {
+      if (e.defaultPrevented || !sel.course) return
+      const files = imageFiles(e.clipboardData)
+      if (!files.length) return
+      e.preventDefault()
+      try {
+        const names = []
+        for (const f of files) names.push(await imageActions.addImage(f))
+        setNotice({ kind: 'ok', text: `Картинка добавлена в «Картинки» курса: ${names.join(', ')}. Чтобы она сразу встала в текст, вставляйте её, когда курсор стоит в нужном поле.` })
+      } catch (err) {
+        setNotice({ kind: 'error', text: err.message })
+      }
+    }
+    document.addEventListener('paste', onPaste)
+    return () => document.removeEventListener('paste', onPaste)
+  }, [imageActions, sel.course])
 
   // Картинки удалённых курсов из хранилища убираются
   const courseKeys = content?.courses.map((c) => c._key).join(' ') ?? ''
