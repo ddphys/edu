@@ -209,6 +209,8 @@ export default function Video({ url, title, vertical = false, quiz = [], quizSta
   const box = useRef(null)
   const skipped = useRef(new Set())
   const endedAt = useRef(0)
+  // Таймер «держим паузу»: пока на экране вопрос, паузу шлём повторно
+  const hold = useRef(null)
   // Вопрос по ходу видео: номер вопроса или null
   const [active, setActive] = useState(null)
   // Повтор в конце видео: { queue: номера вопросов, pos, fresh: ответил ли уже в этом повторе }
@@ -232,6 +234,8 @@ export default function Video({ url, title, vertical = false, quiz = [], quizSta
       setBusy(false)
     }
   }
+
+  useEffect(() => () => clearInterval(hold.current), [])
 
   useEffect(() => {
     const sync = () => setFs((v) => (fullscreenElement() === box.current ? 'native' : v === 'native' ? null : v))
@@ -301,8 +305,21 @@ export default function Video({ url, title, vertical = false, quiz = [], quizSta
     if (i === -1) return
     // Из чужого полноэкранного режима не выбиваем: вопрос уйдёт в повтор в конце видео
     if (foreignFullscreen()) return skipped.current.add(i)
-    api.current?.pause()
+    holdPause()
     setActive(i)
+  }
+
+  // Плеер (особенно Rutube) может проигнорировать единственную команду паузы,
+  // поэтому, пока вопрос открыт, шлём её повторно — до «Продолжить» или «Пропустить»
+  function holdPause() {
+    clearInterval(hold.current)
+    api.current?.pause()
+    hold.current = setInterval(() => api.current?.pause(), 500)
+  }
+
+  function releasePause() {
+    clearInterval(hold.current)
+    hold.current = null
   }
 
   // Видео закончилось — ещё раз задаём вопросы с ошибкой и пропущенные.
@@ -312,12 +329,14 @@ export default function Video({ url, title, vertical = false, quiz = [], quizSta
     endedAt.current = Date.now()
     const queue = quiz.map((_, i) => i).filter((i) => !quizState[i]?.retried && !quizState[i]?.ok)
     if (queue.length === 0) return
+    releasePause()
     setActive(null)
     setReview({ queue, pos: 0, fresh: false })
   }
 
   function closeActive() {
     skipped.current.add(active)
+    releasePause()
     setActive(null)
     api.current?.play()
   }
