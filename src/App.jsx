@@ -45,6 +45,19 @@ export default function App() {
     return () => window.removeEventListener('hashchange', onHash)
   }, [])
 
+  // Правила опыта закрываются по Esc и по щелчку мимо них
+  useEffect(() => {
+    if (!showRules) return
+    const onKey = (e) => e.key === 'Escape' && setShowRules(false)
+    const onDown = (e) => !e.target.closest?.('.rules, .xp') && setShowRules(false)
+    window.addEventListener('keydown', onKey)
+    window.addEventListener('pointerdown', onDown)
+    return () => {
+      window.removeEventListener('keydown', onKey)
+      window.removeEventListener('pointerdown', onDown)
+    }
+  }, [showRules])
+
   const ready = status === 'ready'
   const course = ready && route.courseId ? content.courses.find((c) => c.id === route.courseId) : null
   const lessons = course?.lessons ?? []
@@ -137,30 +150,44 @@ export default function App() {
           </div>
         </div>
         {showRules && (
-          <div className="topbar__in">
-            <ul className="rules">
+          <div className="topbar__in topbar__in--pop">
+            <div className="rules" role="dialog" aria-label="Как начисляется опыт">
+              <h2 className="rules__title">Как начисляется опыт</h2>
               {course ? (
                 <>
-                  <li>
-                    В этом курсе у вас {totalXp(progress, course.id)} XP. В шапке — сумма по всем курсам.
-                  </li>
-                  <li>
-                    Задача стоит от {Math.min(...xpLevels)} до {Math.max(...xpLevels)} XP — чем сложнее, тем дороже.
-                  </li>
-                  <li>
-                    Ошибка −{pct(course.errorPenalty)} цены, подсказка −{pct(course.hintPenalty)}. Решили сами — получите
-                    не меньше {pct(course.minShare)}.
-                  </li>
-                  <li>«Я не знаю» открывает решение, но XP за задачу не будет.</li>
+                  <dl className="rules__facts">
+                    <div>
+                      <dt>за задачу</dt>
+                      <dd>
+                        {Math.min(...xpLevels)}–{Math.max(...xpLevels)} XP
+                      </dd>
+                    </div>
+                    <div>
+                      <dt>ошибка</dt>
+                      <dd>−{pct(course.errorPenalty)}</dd>
+                    </div>
+                    <div>
+                      <dt>подсказка</dt>
+                      <dd>−{pct(course.hintPenalty)}</dd>
+                    </div>
+                  </dl>
+                  <ul className="rules__list">
+                    <li>Чем сложнее задача, тем она дороже. Ошибка и подсказка снимают часть её цены.</li>
+                    <li>Решили сами — получите не меньше {pct(course.minShare)} цены.</li>
+                    <li>«Я не знаю» открывает решение, но XP за задачу не будет.</li>
+                    <li>
+                      В этом курсе у вас {totalXp(progress, course.id)} XP. В шапке — сумма по всем курсам.
+                    </li>
+                  </ul>
                 </>
               ) : (
-                <>
+                <ul className="rules__list">
                   <li>XP начисляется за решённые задачи. В шапке — сумма по всем курсам.</li>
                   <li>Чем сложнее задача, тем она дороже. Ошибки и подсказки уменьшают награду.</li>
                   <li>«Я не знаю» открывает решение, но XP за задачу не будет.</li>
-                </>
+                </ul>
               )}
-            </ul>
+            </div>
           </div>
         )}
       </header>

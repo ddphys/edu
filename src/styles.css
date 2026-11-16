@@ -125,8 +125,17 @@ a { color: inherit; text-decoration: none; }
 .teacher__photo { flex: none; width: 48px; height: 48px; border-radius: 50%; background: var(--accent-soft); color: var(--accent); display: grid; place-items: center; font-weight: 600; overflow: hidden; }
 button.xp { border: 0; cursor: pointer; font-family: inherit; }
 .xp__q { display: inline-grid; place-items: center; width: 16px; height: 16px; border-radius: 50%; background: var(--accent); color: var(--on-accent); font-size: 11px; margin-left: 4px; }
-.rules { color: var(--muted); font-size: 14px; padding-left: 20px; margin: 0; }
-.rules li { margin-bottom: 4px; }
+/* Правила опыта: плашка под кнопкой XP, лежит поверх страницы и не сдвигает её */
+.topbar__in--pop { position: relative; padding-top: 0; padding-bottom: 0; }
+.rules { position: absolute; top: 8px; right: 24px; width: min(420px, calc(100vw - 32px)); padding: 22px 24px 20px; border: 1px solid var(--border); border-radius: var(--radius); background: var(--bar); box-shadow: 0 16px 40px rgba(15, 25, 60, .16); }
+.rules__title { font: 700 17px/1.2 var(--display); letter-spacing: -.015em; }
+.rules__facts { display: flex; flex-wrap: wrap; gap: 12px 28px; margin: 18px 0 0; padding-bottom: 18px; border-bottom: 1px solid var(--line); }
+.rules__facts div { display: flex; flex-direction: column-reverse; }
+.rules__facts dd { margin: 0; font: 700 22px/1 var(--display); letter-spacing: -.03em; color: var(--accent); white-space: nowrap; }
+.rules__facts dt { margin-top: 7px; color: var(--muted); font-size: 11px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; }
+.rules__list { margin: 16px 0 0; padding: 0; list-style: none; color: var(--text-2); font-size: 14px; line-height: 1.45; }
+.rules__list li { position: relative; padding-left: 22px; margin-top: 7px; }
+.rules__list li::before { content: '—'; position: absolute; left: 0; color: var(--muted); }
 .teacher__photo img { width: 100%; height: 100%; object-fit: cover; }
 
 /* Каталог курсов */
@@ -155,7 +164,7 @@ a.course-card:hover { background: var(--hover); }
 /* Всё решено — шапка зелёная */
 .poster--done { --poster: var(--poster-done); }
 .poster > * { position: relative; }
-.poster :focus-visible { outline-color: var(--poster-text); }
+.poster__head :focus-visible { outline-color: var(--poster-text); }
 /* Верхняя строка: слева путь назад, справа — что это за страница */
 .poster__top { display: flex; justify-content: space-between; align-items: baseline; gap: 16px; margin-bottom: 26px; }
 .poster__back { font-size: 15px; opacity: .8; }
@@ -427,24 +436,25 @@ a.lesson-row[href]:hover .lesson-row__arrow { color: var(--accent); transform: t
   .page--poster { padding-top: 0; }
   .card { padding: 20px; }
   .section { margin-top: 40px; }
-  .poster { margin-bottom: 28px; }
-  .page--poster .poster { padding: 14px 0 22px; }
-  .poster__top { margin-bottom: 18px; }
+  /* От плаката остаётся узкая цветная полоса с названием. Описание и преподаватель — под ней на белом,
+     список тем, числа, обложка и знак на фоне не показываются */
+  .poster { margin-bottom: 24px; padding: 0; overflow: visible; border-radius: 0; background: none; color: inherit; }
+  .page--poster .poster { padding: 0; border-image: none; }
+  .poster__head { padding: 12px 16px 16px; border-radius: var(--radius); background: var(--poster); color: var(--poster-text); }
+  .page--poster .poster__head { padding: 12px 0 16px; border-radius: 0; border-image: conic-gradient(var(--poster) 0 0) fill 0 / 0 / 0 100vw; }
+  .poster__top { margin-bottom: 10px; }
   .poster__label { font-size: 13px; }
-  .poster__title { font-size: clamp(24px, 6.9vw, 54px); font-size: clamp(24px, 6.9cqi, 54px); }
-  .poster__title--long { font-size: clamp(22px, 6vw, 46px); font-size: clamp(22px, 6cqi, 46px); }
-  .poster__list, .poster__about { font-size: 15px; line-height: 1.45; margin-top: 12px; }
-  .poster__list li { padding-left: 22px; margin: 2px 0; }
-  .poster .teacher { margin-top: 16px; }
-  .poster .teacher__photo { width: 40px; height: 40px; }
-  .poster__facts { gap: 4px 18px; margin-top: 16px; }
-  .poster__fact { flex-direction: row-reverse; align-items: baseline; gap: 6px; }
-  .poster__fact dd { font-size: 17px; letter-spacing: -.02em; }
-  .poster__fact dt { margin: 0; font-size: 11px; }
+  .poster__title, .poster__title--long { padding-top: 0; font-size: clamp(18px, 5.1vw, 22px); font-size: clamp(18px, 5.1cqi, 22px); line-height: 1.12; letter-spacing: -.02em; }
+  .poster > .poster__mark, .poster__list, .poster__facts, .poster__aside { display: none; }
   .poster__body--aside { display: block; }
-  .poster__aside { margin-top: 16px; }
-  .poster__cover { aspect-ratio: auto; height: 56px; }
+  .poster__about { margin-top: 16px; font-size: 16px; color: var(--text-2); opacity: 1; }
+  .poster .teacher { margin-top: 14px; }
+  .poster .teacher__photo { width: 40px; height: 40px; background: var(--accent-soft); color: var(--accent); }
+  .teacher__role { color: var(--muted); opacity: 1; }
   .course-card { max-width: none; }
+  .rules { right: 16px; padding: 18px 18px 16px; }
+  .rules__facts { gap: 10px 20px; }
+  .rules__facts dd { font-size: 19px; }
   .done { padding: 22px 20px 24px; }
   .done--ok { padding: 30px 20px 32px; }
   .done__text { font-size: 16px; }

@@ -171,16 +171,16 @@ textarea.adm-input { resize: vertical; line-height: 1.45; min-height: 40px; }
 .adm-preview .answer--stack > .btn { width: 100%; }
 .adm-preview .task-row { padding: 14px 16px; }
 .adm-preview .card--row > .task { padding: 2px 20px 20px; }
-.adm-preview .poster { margin-bottom: 28px; padding: 16px 16px 22px; }
-.adm-preview .poster__top { margin-bottom: 18px; }
-.adm-preview .poster__list, .adm-preview .poster__about { font-size: 15px; line-height: 1.45; margin-top: 12px; }
-.adm-preview .poster__facts { gap: 4px 18px; margin-top: 16px; }
-.adm-preview .poster__fact { flex-direction: row-reverse; align-items: baseline; gap: 6px; }
-.adm-preview .poster__fact dd { font-size: 17px; }
-.adm-preview .poster__fact dt { margin: 0; font-size: 11px; }
+.adm-preview .poster { margin-bottom: 24px; padding: 0; overflow: visible; border-radius: 0; background: none; color: inherit; }
+.adm-preview .poster__head { padding: 12px 16px 16px; border-radius: var(--radius); background: var(--poster); color: var(--poster-text); }
+.adm-preview .poster__top { margin-bottom: 10px; }
+.adm-preview .poster__title, .adm-preview .poster__title--long { padding-top: 0; font-size: clamp(18px, 5.1cqi, 22px); line-height: 1.12; }
+.adm-preview .poster > .poster__mark, .adm-preview .poster__list, .adm-preview .poster__facts, .adm-preview .poster__aside { display: none; }
 .adm-preview .poster__body--aside { display: block; }
-.adm-preview .poster__aside { margin-top: 16px; }
-.adm-preview .poster__cover { aspect-ratio: auto; height: 56px; }
+.adm-preview .poster__about { margin-top: 16px; font-size: 16px; color: var(--text-2); opacity: 1; }
+.adm-preview .poster .teacher { margin-top: 14px; }
+.adm-preview .poster .teacher__photo { width: 40px; height: 40px; background: var(--accent-soft); color: var(--accent); }
+.adm-preview .teacher__role { color: var(--muted); opacity: 1; }
 .adm-preview .course-card { max-width: none; }
 .adm-preview .done { padding: 22px 20px 24px; }
 .adm-preview .lesson-row { grid-template-columns: 46px 1fr; gap: 6px 14px; padding: 18px; align-items: start; }
