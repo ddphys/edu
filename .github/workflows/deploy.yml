@@ -24,9 +24,14 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
-      # Тесты и проверка контента идут до сборки: сломанная версия не публикуется
+      # Тесты и проверка контента идут до публикации: сломанная версия на сайт не попадает
       - run: npm test
       - run: npm run build
+      # Автопроход сайта в браузере (e2e/walk.cjs): с поломкой на странице сайт не публикуется.
+      # Браузер ставится только здесь, в зависимости сайта он не входит
+      - run: npm install --no-save playwright@1.63.0
+      - run: npx playwright install --with-deps chromium
+      - run: npm run e2e
       - uses: actions/upload-pages-artifact@v3
         with:
           path: dist

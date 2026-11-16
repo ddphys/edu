@@ -12,18 +12,20 @@
   font: 15px/1.45 var(--font); font-variant-numeric: tabular-nums; -webkit-text-size-adjust: 100%;
 }
 body:has(.ege) { background: #F5F6F8; }
-@media (prefers-color-scheme: dark) {
-  .ege {
+/* Тёмная тема — та же, что у всего сайта: <html data-theme="dark"> (см. src/theme.js) */
+@media screen {
+  :root[data-theme='dark'] .ege {
     --bg: #101216; --surface: #181B21; --ink: #ECEEF2; --muted: #9AA1AE; --faint: #646B78; --line: #262A33; --soft: #21252C;
     --accent: #8EA3FF; --accent-soft: #1F2742;
     --good: #4CC48A; --good-soft: #15301F; --mid: #E8B04A; --mid-soft: #33290F; --bad: #F07B6E; --bad-soft: #3A1D1A;
     --on-solid: #0F1115; color-scheme: dark;
     --t-mech: #6EA8FF; --t-mol: #5FD08A; --t-el: #F2C94C; --t-q: #F27B72; --t-meth: #9AA3B2; --t-mix: #ECEEF2;
   }
-  body:has(.ege) { background: #101216; }
+  :root[data-theme='dark'] body:has(.ege) { background: #101216; }
 }
 .ege *, .ege *::before, .ege *::after { box-sizing: border-box; }
-.ege button, .ege input, .ege select { font: inherit; color: inherit; }
+/* :where — чтобы сброс не перебивал цвета кнопок, заданные одним классом (.e-btn--pri, .e-pt) */
+:where(.ege) button, :where(.ege) input, :where(.ege) select { font: inherit; color: inherit; }
 .ege h1, .ege h2, .ege p, .ege ul { margin: 0; padding: 0; }
 .ege ul { list-style: none; }
 .ege a { color: inherit; text-decoration: none; }

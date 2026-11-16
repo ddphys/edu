@@ -23,24 +23,25 @@ function renderInline(inline) {
 
 // Картинка с подписью. Размер известен заранее (он записан в курсе), поэтому место под картинку
 // занято ещё до загрузки и страница не дёргается; шире своего блока картинка не становится.
-function Figure({ block }) {
+function Figure({ block, eager }) {
   const info = useContext(ImagesContext)(block.name)
   if (!info) return <div className="figure figure--missing">Картинка «{block.name}» не найдена</div>
   const width = block.width ?? Math.min(info.w, 640)
   return (
-    <figure className="figure" style={{ maxWidth: `min(100%, ${width}px)` }}>
-      <img src={info.src} width={info.w} height={info.h} alt={block.caption.replace(/\$/g, '')} loading="lazy" decoding="async" />
+    <figure className="figure" style={{ '--fig-w': `${width}px` }}>
+      <img src={info.src} width={info.w} height={info.h} alt={block.caption.replace(/\$/g, '')} loading={eager ? 'eager' : 'lazy'} decoding="async" />
       {block.caption && <figcaption dangerouslySetInnerHTML={{ __html: renderInline(parseInline(block.caption)) }} />}
     </figure>
   )
 }
 
-export default function MathText({ text, className = '' }) {
+// eager — грузить картинки сразу, а не когда до них долистают (нужно листу для печати)
+export default function MathText({ text, className = '', eager = false }) {
   return (
     <div className={`math ${className}`}>
       {parseText(text).map((block, i) =>
         block.type === 'image' ? (
-          <Figure key={i} block={block} />
+          <Figure key={i} block={block} eager={eager} />
         ) : (
           <p key={i} dangerouslySetInnerHTML={{ __html: renderInline(block.inline) }} />
         ),

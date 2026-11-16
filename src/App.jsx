@@ -2,7 +2,9 @@ import { Suspense, lazy, useEffect, useMemo, useState } from 'react'
 import Catalog from './components/Catalog.jsx'
 import Lesson from './components/Lesson.jsx'
 import LessonList from './components/LessonList.jsx'
+import PrintSheet from './components/PrintSheet.jsx'
 import { ImagesContext } from './components/Math.jsx'
+import ThemeToggle from './components/ThemeToggle.jsx'
 import { totalXp } from './api/progress.js'
 import { href, legacyTarget, parseRoute } from './routes.js'
 import { useStore } from './store.jsx'
@@ -46,7 +48,7 @@ export default function App() {
   const ready = status === 'ready'
   const course = ready && route.courseId ? content.courses.find((c) => c.id === route.courseId) : null
   const lessons = course?.lessons ?? []
-  const index = route.page === 'lesson' ? lessons.findIndex((l) => l.id === route.lessonId) : -1
+  const index = route.page === 'lesson' || route.page === 'print' ? lessons.findIndex((l) => l.id === route.lessonId) : -1
   const lesson = lessons[index]
 
   // Старая ссылка #/lesson/l1 — подменяем адрес на новый (кнопка «Назад» при этом не ломается)
@@ -101,6 +103,7 @@ export default function App() {
   else if (!course) body = <NotFound what={route.page === 'unknown' ? 'Адрес' : 'Курс'} />
   else if (route.page === 'course') body = <LessonList course={course} progress={progress.courses[course.id]} onReset={reset} />
   else if (!lesson) body = <NotFound what="Урок" />
+  else if (route.page === 'print') body = <PrintSheet key={`${course.id}/${lesson.id}`} course={course} lesson={lesson} number={index + 1} />
   else body = <Lesson key={`${course.id}/${lesson.id}`} course={course} lesson={lesson} number={index + 1} prev={lessons[index - 1]} next={lessons[index + 1]} />
 
   return (
@@ -118,9 +121,12 @@ export default function App() {
               </>
             )}
           </div>
-          <button className="xp" onClick={() => setShowRules((v) => !v)} title="Как начисляется опыт" aria-expanded={showRules}>
-            {totalXp(progress)} XP <span className="xp__q">?</span>
-          </button>
+          <div className="topbar__right">
+            <ThemeToggle />
+            <button className="xp" onClick={() => setShowRules((v) => !v)} title="Как начисляется опыт" aria-expanded={showRules}>
+              {totalXp(progress)} XP <span className="xp__q">?</span>
+            </button>
+          </div>
         </div>
         {showRules && (
           <div className="topbar__in">

@@ -13,10 +13,13 @@
 //       revealed = { hints: [открытые подсказки], solution, answer } — то, что ученику
 //       уже можно видеть: подсказки, которые он взял; после завершения — разбор и верный ответ
 //
-//   takeHint(courseId, taskId)             → { kind: 'hint' | 'noop', state, revealed }
-//   submitAnswer(courseId, taskId, input)  → { kind, state, revealed, message?, note?, xpLost? }
+//   takeHint(courseId, taskId, meta?)             → { kind: 'hint' | 'noop', state, revealed }
+//   submitAnswer(courseId, taskId, input, meta?)  → { kind, state, revealed, message?, note?, xpLost? }
 //       kind: 'correct' | 'wrong' | 'invalid' (ввод не разобран, XP не снимается) | 'locked' | 'noop'
-//   skipTask(courseId, taskId)             → { kind: 'skipped' | 'noop', state, revealed }
+//   skipTask(courseId, taskId, meta?)             → { kind: 'skipped' | 'noop', state, revealed }
+//       meta = { ms } — сколько задача была на экране с прошлого действия; на проверку не влияет,
+//       вместе с самим ответом пишется в журнал попыток
+//   getAttempts() → { version, events }   журнал попыток (формат — в attempts.js)
 //
 //   answerQuiz(courseId, lessonId, index, choice, { retry }) → { saved, correct, explain }
 //   skipQuizRetry(courseId, lessonId, index)                 → { saved }

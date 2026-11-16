@@ -5,12 +5,17 @@
 import { mergeCourse } from '../content/format.js'
 import { courseTasks } from '../lib.js'
 import { applyHint, applyQuizAnswer, applySkip, applySubmit, normalize, revealedFor } from './engine.js'
+import { addEvent, readJournal, writeJournal } from './attempts.js'
 import { emptyCourseProgress, emptyProgress, readProgress, writeProgress } from './progress.js'
+
+// Какие исходы действия над задачей попадают в журнал попыток
+const LOGGED = { wrong: 'wrong', correct: 'correct', invalid: 'invalid', hint: 'hint', skipped: 'skip' }
 
 export function createLocalApi({ source, kv, files = null, now = () => Date.now(), viewer = {} }) {
   let publicPromise = null
   const fullPromises = {}
   let progress = null
+  let journal = null
 
   const getContent = () => (publicPromise ??= source.loadPublic())
 
@@ -43,8 +48,16 @@ export function createLocalApi({ source, kv, files = null, now = () => Date.now(
   const savedTasks = (courseId) => progress.courses[courseId]?.tasks ?? {}
   const save = () => writeProgress(kv, progress)
 
-  // Общий ход действия над задачей: взять состояние, применить правило, сохранить
-  async function act(courseId, taskId, rule) {
+  // Журнал попыток (см. attempts.js): неверные ответы, время, подсказки
+  function log(event) {
+    journal ??= readJournal(kv)
+    addEvent(journal, { at: now(), ...event })
+    writeJournal(kv, journal)
+  }
+
+  // Общий ход действия над задачей: взять состояние, применить правило, сохранить.
+  // input — что отправил ученик, meta.ms — сколько задача была на экране; оба идут только в журнал.
+  async function act(courseId, taskId, rule, { input, meta } = {}) {
     const { course, task } = await getTask(courseId, taskId)
     await loadProgress()
     const result = rule(course, task, normalize(savedTasks(courseId)[taskId]))
@@ -52,6 +65,8 @@ export function createLocalApi({ source, kv, files = null, now = () => Date.now(
       courseProgress(courseId).tasks[taskId] = result.state
       save()
     }
+    if (LOGGED[result.kind])
+      log({ course: courseId, task: taskId, kind: LOGGED[result.kind], input, ms: meta?.ms, hints: result.state.hintsUsed, errors: result.state.errors })
     return { ...result, revealed: revealedFor(task, result.state) }
   }
 
@@ -76,10 +91,15 @@ export function createLocalApi({ source, kv, files = null, now = () => Date.now(
       return out
     },
 
-    takeHint: (courseId, taskId) => act(courseId, taskId, (course, task, state) => applyHint(task, state)),
-    submitAnswer: (courseId, taskId, input) =>
-      act(courseId, taskId, (course, task, state) => applySubmit(course, task, state, input, now())),
-    skipTask: (courseId, taskId) => act(courseId, taskId, (course, task, state) => applySkip(task, state)),
+    takeHint: (courseId, taskId, meta) => act(courseId, taskId, (course, task, state) => applyHint(task, state), { meta }),
+    submitAnswer: (courseId, taskId, input, meta) =>
+      act(courseId, taskId, (course, task, state) => applySubmit(course, task, state, input, now()), { input, meta }),
+    skipTask: (courseId, taskId, meta) => act(courseId, taskId, (course, task, state) => applySkip(task, state), { meta }),
+
+    // Журнал попыток целиком: { version, events }
+    async getAttempts() {
+      return structuredClone((journal ??= readJournal(kv)))
+    },
 
     async answerQuiz(courseId, lessonId, index, choice, options = {}) {
       const { course } = await getFull(courseId)
@@ -103,6 +123,8 @@ export function createLocalApi({ source, kv, files = null, now = () => Date.now(
 
     async resetProgress(courseId) {
       await loadProgress()
+      // Журнал попыток не стираем: в нём остаётся отметка о сбросе
+      for (const id of courseId ? [courseId] : Object.keys(progress.courses)) log({ course: id, kind: 'reset' })
       if (courseId) delete progress.courses[courseId]
       else progress = emptyProgress()
       save()
