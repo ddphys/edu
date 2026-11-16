@@ -168,11 +168,13 @@ a.course-card:hover { border-color: var(--accent-line); box-shadow: 0 10px 28px 
 .poster__list li::before { content: '—'; position: absolute; left: 0; opacity: .7; }
 .poster .teacher { margin-top: 26px; }
 .poster .teacher__photo { background: var(--poster-text); color: var(--poster); font-family: var(--display); font-weight: 700; }
-.teacher__role { font-size: 14px; opacity: .8; }
+.teacher__role { opacity: .8; margin-bottom: 2px; }
 .poster__facts { display: flex; flex-wrap: wrap; gap: 16px 44px; margin: 34px 0 0; }
 .poster__fact { display: flex; flex-direction: column-reverse; }
 .poster__fact dd { margin: 0; font: 700 34px/1 var(--display); letter-spacing: -.03em; font-variant-numeric: tabular-nums; }
-.poster__fact dt { margin-top: 8px; font-size: 14px; opacity: .8; }
+.poster__fact dt { margin-top: 9px; opacity: .85; }
+/* Мелкие подписи — прописными с разрядкой */
+.poster__fact dt, .teacher__role, .group-title, .hint__title, .solution__title, .lesson-nav small { font-size: 12px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; }
 /* Номер урока — огромным знаком на фоне, срезан нижним краем блока */
 .poster > .poster__mark { position: absolute; right: -.03em; bottom: -.17em; font-family: var(--display); font-weight: 900; font-size: clamp(170px, 46vw, 430px); font-size: clamp(170px, 46cqi, 430px); line-height: .8; letter-spacing: -.06em; color: var(--poster-text); opacity: .13; pointer-events: none; user-select: none; }
 
@@ -262,7 +264,7 @@ a.lesson-row[href]:hover .lesson-row__arrow { color: var(--accent); transform: t
 .print-link { display: inline-flex; align-items: center; gap: 7px; margin: -6px 0 18px; color: var(--muted); font-size: 14px; }
 .print-link:hover { color: var(--accent); }
 .hw { display: grid; grid-template-columns: minmax(0, 1fr); gap: 20px; }
-.group-title { font-weight: 600; font-size: 15px; color: var(--muted); margin-bottom: 14px; }
+.group-title { color: var(--muted); margin-bottom: 14px; }
 .steps { display: flex; flex-wrap: wrap; gap: 10px; padding-bottom: 24px; margin-bottom: 28px; border-bottom: 1px solid var(--line); }
 /* Номера задач — квадратными ячейками */
 .step { width: 46px; height: 46px; border-radius: 10px; border: 2px solid transparent; background: var(--bg); color: var(--text-2); font: 700 15px/1 var(--display); }
@@ -318,8 +320,8 @@ a.lesson-row[href]:hover .lesson-row__arrow { color: var(--accent); transform: t
 .hint, .solution { border-radius: 12px; padding: 20px 24px; margin: 0 0 16px; }
 .hint { background: var(--amber-bg); }
 .solution { background: var(--bg); }
-.hint__title { color: var(--amber-text); font-size: 13px; font-weight: 600; margin-bottom: 8px; }
-.solution__title { font-size: 13px; font-weight: 600; color: var(--text-2); margin-bottom: 10px; }
+.hint__title { color: var(--amber-text); margin-bottom: 8px; }
+.solution__title { color: var(--text-2); margin-bottom: 10px; }
 .hint p:last-child, .solution p:last-child { margin-bottom: 0; }
 
 .btn { border-radius: 999px; padding: 10px 20px; border: 1px solid transparent; font-weight: 500; transition: background .15s, border-color .15s; }
@@ -394,7 +396,11 @@ a.lesson-row[href]:hover .lesson-row__arrow { color: var(--accent); transform: t
 .lesson-nav { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 56px; }
 .lesson-nav a { background: var(--card); border-radius: var(--radius); padding: 20px 24px; font: 700 16px/1.3 var(--display); letter-spacing: -.01em; transition: background .15s; }
 .lesson-nav a:hover { background: var(--hover); }
-.lesson-nav small { display: block; color: var(--muted); font: 400 14px/1.4 system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; letter-spacing: 0; margin-bottom: 8px; }
+.lesson-nav small { display: block; color: var(--muted); font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; line-height: 1.4; margin-bottom: 10px; }
+/* Следующий урок — главное действие в конце страницы: сплошная синяя полоса */
+.lesson-nav a.lesson-nav__next { background: var(--poster); color: var(--poster-text); }
+.lesson-nav a.lesson-nav__next:hover { background: var(--accent-hover); }
+.lesson-nav__next small { color: inherit; opacity: .8; }
 .lesson-nav__next { text-align: right; }
 
 @media (max-width: 700px) {
