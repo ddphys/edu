@@ -1,17 +1,33 @@
 import { courseTasks, plural } from '../lib.js'
 import { href } from '../routes.js'
+import Poster from './Poster.jsx'
 
 // Каталог курсов: карточки с обложкой, описанием и прогрессом ученика.
 //   imageUrl(курс, имя файла) — адрес картинки; links: false — карточки не ведут никуда (предпросмотр)
 export default function Catalog({ site, courses, progress, imageUrl, links = true }) {
+  // Итог по всем курсам — числами в шапке
+  const savedOf = (course) => progress?.courses?.[course.id]?.tasks ?? {}
+  const everything = courses.flatMap((course) => courseTasks(course).map((t) => savedOf(course)[t.id]))
+  const solvedAll = everything.filter((s) => s?.status === 'correct').length
+  const xpAll = everything.reduce((sum, s) => sum + (s?.xp || 0), 0)
+  const facts =
+    courses.length > 0
+      ? [
+          { value: courses.length, label: plural(courses.length, 'курс', 'курса', 'курсов') },
+          { value: everything.length, label: plural(everything.length, 'задача', 'задачи', 'задач') },
+          { value: solvedAll, label: 'решено' },
+          { value: xpAll, label: 'XP' },
+        ]
+      : []
+
   return (
     <>
-      <section className="hero hero--catalog">
-        <h1>{site.title || 'Курсы'}</h1>
-        {site.about && <p className="hero__about">{site.about}</p>}
-      </section>
+      <Poster title={site.title || 'Курсы'} facts={facts}>
+        {site.about && <p className="poster__about">{site.about}</p>}
+      </Poster>
 
       {courses.length === 0 && <p className="muted">Курсов пока нет.</p>}
+      {courses.length > 0 && <h2 className="list-title">Курсы</h2>}
       <nav className="catalog" aria-label="Курсы">
         {courses.map((course) => {
           const tasks = courseTasks(course)
@@ -22,7 +38,7 @@ export default function Catalog({ site, courses, progress, imageUrl, links = tru
           const cover = course.cover && course.images?.[course.cover] ? imageUrl(course, course.cover) : null
           const Card = links ? 'a' : 'div'
           return (
-            <Card key={course.id} className="course-card" {...(links ? { href: href.course(course.id) } : {})}>
+            <Card key={course.id} className={`course-card ${tasks.length > 0 && solved === tasks.length ? 'course-card--done' : ''}`} {...(links ? { href: href.course(course.id) } : {})}>
               <span className="course-card__cover">
                 {cover ? <img src={cover} alt="" loading="lazy" decoding="async" /> : <span aria-hidden="true">{(course.title || '?').trim()[0]}</span>}
               </span>

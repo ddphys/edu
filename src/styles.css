@@ -32,15 +32,16 @@
   /* Шапка сайта; плакатная шапка курса и урока; шрифт заголовков (подключён в src/main.jsx) */
   --bar: #fff;
   --poster: #2f54eb;
+  --poster-done: #08824a;
   --poster-text: #fff;
   --display: 'Unbounded Variable', 'Arial Black', system-ui, sans-serif;
   color-scheme: light;
 }
-/* Страницы курса и урока — белый лист с плоскими плашками, синий плотнее.
-   Какая страница открыта, записано в <html data-page> (см. src/App.jsx). Каталог остаётся на общей палитре. */
+/* Страницы ученика (каталог, курс, урок) — белый лист с плоскими плашками, синий плотнее.
+   Какая страница открыта, записано в <html data-page> (см. src/App.jsx).
+   Лист для печати, редактор и бланк ЕГЭ остаются на общей палитре. */
 @media screen {
-  :root[data-page='course']:not([data-theme='dark']),
-  :root[data-page='lesson']:not([data-theme='dark']) {
+  :root:is([data-page='catalog'], [data-page='course'], [data-page='lesson'], [data-page='unknown'], [data-page='legacy-lesson']):not([data-theme='dark']) {
     --bg: #fff;
     --card: #f1f4fa;
     --text: #1b1d25;
@@ -56,7 +57,7 @@
     --hover: #e3e8f3;
     --mark: #b4bbcd;
   }
-  :root[data-page='course'], :root[data-page='lesson'] { --radius: 12px; }
+  :root:is([data-page='catalog'], [data-page='course'], [data-page='lesson'], [data-page='unknown'], [data-page='legacy-lesson']) { --radius: 12px; }
 }
 /* Тёмная тема. Какая тема включена, записано в <html data-theme> (см. src/theme.js):
    по умолчанию как на устройстве, кнопка в шапке меняет её вручную. На бумаге — всегда светлая. */
@@ -120,9 +121,6 @@ a { color: inherit; text-decoration: none; }
 .page--poster { padding-top: 0; }
 .card { background: var(--card); border-radius: var(--radius); padding: 32px 36px; }
 
-.hero { margin-bottom: 56px; }
-.hero h1 { font-size: 36px; line-height: 1.15; letter-spacing: -.01em; margin: 10px 0 16px; max-width: 700px; }
-.hero__about { color: var(--text-2); font-size: 17px; max-width: 620px; margin: 0 0 28px; }
 .teacher { display: flex; align-items: center; gap: 14px; }
 .teacher__photo { flex: none; width: 48px; height: 48px; border-radius: 50%; background: var(--accent-soft); color: var(--accent); display: grid; place-items: center; font-weight: 600; overflow: hidden; }
 button.xp { border: 0; cursor: pointer; font-family: inherit; }
@@ -132,14 +130,14 @@ button.xp { border: 0; cursor: pointer; font-family: inherit; }
 .teacher__photo img { width: 100%; height: 100%; object-fit: cover; }
 
 /* Каталог курсов */
-.hero--catalog { margin-bottom: 36px; }
-.catalog { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 20px; }
-.course-card { display: flex; flex-direction: column; background: var(--card); border-radius: var(--radius); overflow: hidden; border: 1px solid transparent; transition: border-color .15s, box-shadow .15s, transform .15s; }
-a.course-card:hover { border-color: var(--accent-line); box-shadow: 0 10px 28px rgba(20, 40, 90, .1); transform: translateY(-2px); }
-.course-card__cover { display: grid; place-items: center; aspect-ratio: 16/9; background: linear-gradient(135deg, var(--accent-soft), var(--accent-line)); color: var(--accent); font-size: 56px; font-weight: 600; overflow: hidden; }
+.catalog { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; }
+.course-card { max-width: 440px; display: flex; flex-direction: column; background: var(--card); border-radius: var(--radius); overflow: hidden; transition: background .15s; }
+a.course-card:hover { background: var(--hover); }
+.course-card--done, a.course-card--done:hover { background: var(--green-bg); }
+.course-card__cover { display: grid; place-items: center; aspect-ratio: 16/9; background: var(--poster); color: var(--poster-text); font: 800 64px/1 var(--display); overflow: hidden; }
 .course-card__cover img { display: block; width: 100%; height: 100%; object-fit: cover; }
 .course-card__body { display: flex; flex-direction: column; gap: 8px; padding: 20px 22px 22px; flex: 1; }
-.course-card__title { font-size: 18px; font-weight: 600; line-height: 1.3; }
+.course-card__title { font: 700 17px/1.25 var(--display); letter-spacing: -.015em; }
 .course-card__about { color: var(--text-2); font-size: 14px; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
 .course-card__meta { color: var(--muted); font-size: 13px; }
 .course-card__progress { display: grid; gap: 8px; margin-top: auto; padding-top: 10px; font-size: 13px; color: var(--muted); }
@@ -147,43 +145,50 @@ a.course-card:hover { border-color: var(--accent-line); box-shadow: 0 10px 28px 
 .notfound { text-align: center; padding: 48px 0; }
 .notfound h1 { font-size: 26px; margin-bottom: 8px; }
 .notfound .btn { display: inline-block; margin-top: 20px; }
-@media (prefers-reduced-motion: reduce) { .course-card, .lesson-row, .lesson-row__arrow { transition: none; } a.course-card:hover { transform: none; } }
+@media (prefers-reduced-motion: reduce) { .course-card, .lesson-row, .lesson-row__arrow { transition: none; } }
 
-/* Плакатная шапка курса и урока (Poster.jsx). Размеры считаются от ширины блока (cqi):
+/* Плакатная шапка каталога, курса и урока (Poster.jsx). Размеры считаются от ширины блока (cqi):
    в окне это ширина экрана, в предпросмотре редактора — ширина его колонки. */
-.poster { position: relative; overflow: hidden; margin-bottom: 48px; padding: 24px 24px 32px; border-radius: var(--radius); background: var(--poster); color: var(--poster-text); }
+.poster { position: relative; overflow: hidden; margin-bottom: 44px; padding: 22px 24px 28px; border-radius: var(--radius); background: var(--poster); color: var(--poster-text); }
 /* На самой странице цвет уходит до краёв окна: рамка-картинка закрашивает поля и не даёт прокрутки вбок */
-.page--poster .poster { padding: 22px 0 44px; border-radius: 0; border-image: conic-gradient(var(--poster) 0 0) fill 0 / 0 / 0 100vw; }
+.page--poster .poster { padding: 20px 0 36px; border-radius: 0; border-image: conic-gradient(var(--poster) 0 0) fill 0 / 0 / 0 100vw; }
+/* Всё решено — шапка зелёная */
+.poster--done { --poster: var(--poster-done); }
 .poster > * { position: relative; }
 .poster :focus-visible { outline-color: var(--poster-text); }
-.poster__back { display: inline-block; font-size: 15px; opacity: .8; }
+/* Верхняя строка: слева путь назад, справа — что это за страница */
+.poster__top { display: flex; justify-content: space-between; align-items: baseline; gap: 16px; margin-bottom: 26px; }
+.poster__back { font-size: 15px; opacity: .8; }
 .poster__back:hover { opacity: 1; }
-.poster__label { font: 600 15px/1.3 var(--display); opacity: .85; }
-.poster__back + .poster__label, .poster__back + .poster__title { margin-top: 36px; }
-.poster__title { margin: 12px 0 0; font-family: var(--display); font-weight: 800; font-size: clamp(25px, 7.2vw, 54px); font-size: clamp(25px, 7.2cqi, 54px); line-height: 1.08; letter-spacing: -.025em; overflow-wrap: break-word; text-wrap: balance; }
+.poster__label { font: 600 14px/1.3 var(--display); opacity: .9; }
+.poster__title { margin: 0; padding-top: 4px; font-family: var(--display); font-weight: 800; font-size: clamp(25px, 7.2vw, 54px); font-size: clamp(25px, 7.2cqi, 54px); line-height: 1.08; letter-spacing: -.025em; overflow-wrap: break-word; text-wrap: balance; }
 .poster__title--long { font-size: clamp(23px, 6vw, 46px); font-size: clamp(23px, 6cqi, 46px); }
-.poster__list, .poster__about { max-width: 640px; margin: 22px 0 0; padding: 0; font-size: 17px; line-height: 1.5; opacity: .92; }
+/* Под заголовком: слева текст и числа, справа — обложка курса, если она есть */
+.poster__body--aside { display: grid; grid-template-columns: minmax(0, 1fr) min(320px, 38%); gap: 20px 36px; align-items: end; }
+.poster__cover { display: block; width: 100%; aspect-ratio: 16 / 9; object-fit: cover; border-radius: var(--radius); }
+.poster__list, .poster__about { max-width: 640px; margin: 18px 0 0; padding: 0; font-size: 17px; line-height: 1.5; opacity: .92; }
 .poster__list { list-style: none; }
-.poster__list li { position: relative; padding-left: 28px; margin: 4px 0; }
+.poster__list li { position: relative; padding-left: 28px; margin: 3px 0; }
 .poster__list li::before { content: '—'; position: absolute; left: 0; opacity: .7; }
-.poster .teacher { margin-top: 26px; }
+.poster .teacher { margin-top: 22px; }
 .poster .teacher__photo { background: var(--poster-text); color: var(--poster); font-family: var(--display); font-weight: 700; }
 .teacher__role { opacity: .8; margin-bottom: 2px; }
-.poster__facts { display: flex; flex-wrap: wrap; gap: 16px 44px; margin: 34px 0 0; }
+.poster__facts { display: flex; flex-wrap: wrap; gap: 16px 44px; margin: 26px 0 0; }
 .poster__fact { display: flex; flex-direction: column-reverse; }
 .poster__fact dd { margin: 0; font: 700 34px/1 var(--display); letter-spacing: -.03em; font-variant-numeric: tabular-nums; }
 .poster__fact dt { margin-top: 9px; opacity: .85; }
 /* Мелкие подписи — прописными с разрядкой */
 .poster__fact dt, .teacher__role, .group-title, .hint__title, .solution__title, .lesson-nav small { font-size: 12px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; }
-/* Номер урока — огромным знаком на фоне, срезан нижним краем блока */
-.poster > .poster__mark { position: absolute; right: -.03em; bottom: -.17em; font-family: var(--display); font-weight: 900; font-size: clamp(170px, 46vw, 430px); font-size: clamp(170px, 46cqi, 430px); line-height: .8; letter-spacing: -.06em; color: var(--poster-text); opacity: .13; pointer-events: none; user-select: none; }
+/* Номер урока — огромным знаком на фоне, срезан нижним краем блока. У пройденного урока вместо номера галочка */
+.poster > .poster__mark { position: absolute; right: -.03em; bottom: -.17em; font-family: var(--display); font-weight: 900; font-size: clamp(150px, 42vw, 380px); font-size: clamp(150px, 42cqi, 380px); line-height: .8; letter-spacing: -.06em; color: var(--poster-text); opacity: .13; pointer-events: none; user-select: none; }
+.poster > .poster__mark--check { right: 0; bottom: -4%; width: clamp(150px, 38cqi, 330px); height: auto; opacity: .16; }
 
 .list-title { font: 700 26px/1.15 var(--display); letter-spacing: -.02em; margin-bottom: 20px; }
 /* Список уроков — одна таблица: плоские ячейки вплотную, скруглены только внешние углы */
 .lessons { display: grid; gap: 2px; border-radius: var(--radius); overflow: hidden; }
 .lesson-row { display: grid; grid-template-columns: 52px 1fr 150px 20px; gap: 20px; align-items: center; background: var(--card); padding: 24px 28px; transition: background .15s; }
 a.lesson-row[href]:hover { background: var(--hover); }
-.lesson-row--done { background: var(--green-bg); }
+.lesson-row--done, a.lesson-row--done[href]:hover { background: var(--green-bg); }
 .lesson-row__num { font: 800 38px/1 var(--display); letter-spacing: -.04em; color: var(--text); }
 .lesson-row__body { min-width: 0; }
 .lesson-row__title { display: block; font-weight: 700; font-size: 18px; line-height: 1.3; }
@@ -194,7 +199,6 @@ a.lesson-row[href]:hover { background: var(--hover); }
 .bar span { display: block; height: 100%; background: var(--green); border-radius: 2px; }
 .lesson-row__arrow { color: var(--muted); font-size: 18px; transition: transform .15s, color .15s; }
 a.lesson-row[href]:hover .lesson-row__arrow { color: var(--accent); transform: translateX(3px); }
-.tag { display: inline-block; vertical-align: middle; margin-left: 10px; padding: 2px 10px; border-radius: 999px; background: var(--green-bg); color: var(--green-text); font-size: 12px; font-weight: 400; }
 .link-btn { margin-top: 32px; background: none; border: 0; padding: 0; color: var(--muted); font-size: 14px; text-decoration: underline; text-underline-offset: 3px; }
 .link-btn:hover { color: var(--text); }
 
@@ -393,6 +397,16 @@ a.lesson-row[href]:hover .lesson-row__arrow { color: var(--accent); transform: t
 .attach__add input { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
 .attach__add:focus-within { outline: 2px solid var(--accent); outline-offset: 2px; }
 
+/* Итог урока: появляется, когда на все задачи дан ответ. Все решены верно — зелёный и крупный */
+.done { position: relative; overflow: hidden; margin-top: 20px; padding: 28px 36px 30px; border-radius: var(--radius); background: var(--card); }
+.done__title { font: 800 28px/1.1 var(--display); letter-spacing: -.02em; }
+.done__text { margin: 10px 0 0; font-size: 17px; color: var(--text-2); }
+.done--ok { padding: 40px 36px 42px; background: var(--poster-done); color: var(--poster-text); }
+.done--ok .done__title { font-size: clamp(34px, 9cqi, 72px); line-height: 1; letter-spacing: -.03em; }
+.done--ok .done__text { margin-top: 16px; color: inherit; opacity: .92; }
+.done + .lesson-nav { margin-top: 12px; }
+.confetti { position: fixed; inset: 0; z-index: 50; width: 100%; height: 100%; pointer-events: none; }
+
 .lesson-nav { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 56px; }
 .lesson-nav a { background: var(--card); border-radius: var(--radius); padding: 20px 24px; font: 700 16px/1.3 var(--display); letter-spacing: -.01em; transition: background .15s; }
 .lesson-nav a:hover { background: var(--hover); }
@@ -408,22 +422,32 @@ a.lesson-row[href]:hover .lesson-row__arrow { color: var(--accent); transform: t
   .page { padding: 24px 16px 64px; }
   .page--poster { padding-top: 0; }
   .card { padding: 20px; }
-  .hero { margin-bottom: 40px; }
-  .hero h1 { font-size: 28px; }
   .section { margin-top: 40px; }
-  .poster { margin-bottom: 32px; }
-  .page--poster .poster { padding: 14px 0 30px; }
-  .poster__back + .poster__label, .poster__back + .poster__title { margin-top: 26px; }
-  .poster__list, .poster__about { font-size: 16px; margin-top: 16px; }
-  .poster__list li { padding-left: 24px; }
-  .poster__facts { gap: 14px 30px; margin-top: 26px; }
-  .poster__fact dd { font-size: 26px; }
+  .poster { margin-bottom: 28px; }
+  .page--poster .poster { padding: 14px 0 22px; }
+  .poster__top { margin-bottom: 18px; }
+  .poster__label { font-size: 13px; }
+  .poster__title { font-size: clamp(24px, 6.9vw, 54px); font-size: clamp(24px, 6.9cqi, 54px); }
+  .poster__title--long { font-size: clamp(22px, 6vw, 46px); font-size: clamp(22px, 6cqi, 46px); }
+  .poster__list, .poster__about { font-size: 15px; line-height: 1.45; margin-top: 12px; }
+  .poster__list li { padding-left: 22px; margin: 2px 0; }
+  .poster .teacher { margin-top: 16px; }
+  .poster .teacher__photo { width: 40px; height: 40px; }
+  .poster__facts { gap: 4px 18px; margin-top: 16px; }
+  .poster__fact { flex-direction: row-reverse; align-items: baseline; gap: 6px; }
+  .poster__fact dd { font-size: 17px; letter-spacing: -.02em; }
+  .poster__fact dt { margin: 0; font-size: 11px; }
+  .poster__body--aside { display: block; }
+  .poster__aside { display: none; }
+  .course-card { max-width: none; }
+  .done { padding: 22px 20px 24px; }
+  .done--ok { padding: 30px 20px 32px; }
+  .done__text { font-size: 16px; }
   .list-title { font-size: 21px; margin-bottom: 14px; }
   .lesson-row { grid-template-columns: 46px 1fr; gap: 6px 14px; padding: 18px; align-items: start; }
   .lesson-row__num { font-size: 28px; }
   .lesson-row__progress { grid-column: 2; }
   .lesson-row__arrow { display: none; }
-  .tag { margin-left: 0; display: table; margin-top: 6px; }
   .answers { max-width: none; }
   .answer--stack > .btn { width: 100%; }
   .task-row { padding: 14px 16px; }

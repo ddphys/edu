@@ -19,7 +19,6 @@ export function CourseEditor({ ci }) {
           <Text label="Название курса" path={`${path}/title`} value={course.title} onChange={(v) => change((c) => void (c.title = v))} />
           <Text label="id курса" path={`${path}/id`} hint="Имя папки курса и часть адреса" value={course.id} onChange={(v) => change((c) => void (c.id = v.trim()))} />
         </div>
-        <Text label="Строка над названием" path={`${path}/badge`} hint="Например: «У вас доступ к бесплатным занятиям»" value={course.badge} onChange={(v) => change((c) => void (c.badge = v))} />
         <Area label="Описание курса" path={`${path}/about`} value={course.about} onChange={(v) => change((c) => void (c.about = v))} />
         <Select
           label="Обложка в каталоге"

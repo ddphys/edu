@@ -48,7 +48,6 @@ export function newCourse(content) {
     _key: uid(),
     id: firstFree((n) => `course-${n}`, taken),
     title: 'Новый курс',
-    badge: '',
     about: '',
     teacher: { name: '', photo: '' },
     ...structuredClone(DEFAULT_XP_RULES),

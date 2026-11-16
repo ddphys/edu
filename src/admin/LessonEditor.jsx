@@ -463,7 +463,6 @@ export default function LessonEditor({ ci, li }) {
           <Text label="id урока" path={`${path}/id`} hint="Попадает в адрес страницы" value={lesson.id} onChange={(v) => change((l) => void (l.id = v.trim()))} />
         </div>
         <Lines label="Темы урока" path={`${path}/description`} hint="Каждая строка — отдельный пункт под названием урока." value={lesson.description} onChange={(v) => change((l) => void (l.description = v))} />
-        <Check label="Метка «Бесплатно»" checked={lesson.free} onChange={(v) => change((l) => void (l.free = v))} />
       </section>
       <VideoFields lesson={lesson} change={change} path={path} />
       <QuizFields lesson={lesson} change={change} path={path} />

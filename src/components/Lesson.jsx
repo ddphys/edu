@@ -1,4 +1,5 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
+import Confetti from './Confetti.jsx'
 import Poster from './Poster.jsx'
 import Video from './Video.jsx'
 import Task from './Task.jsx'
@@ -95,6 +96,18 @@ export default function Lesson({ course, lesson, number, prev, next, links = tru
   const xpEarned = tasks.reduce((s, t) => s + (st(t).xp || 0), 0)
   const solved = tasks.filter((t) => st(t).status === 'correct').length
   const xpMax = tasks.reduce((s, t) => s + (taskMaxXp(t, course) || 0), 0)
+  // Урок завершён, когда не осталось задач без ответа; пройден — когда все решены верно
+  const finished = tasks.length > 0 && tasks.every((t) => st(t).status !== 'pending')
+  const passed = finished && solved === tasks.length
+  const perfect = passed && xpEarned === xpMax
+  // Салют — только в ту минуту, когда решена последняя задача, а не при каждом заходе на пройденный урок
+  const wasPassed = useRef(passed)
+  const [salute, setSalute] = useState(false)
+  useEffect(() => {
+    if (passed && !wasPassed.current && links) setSalute(true)
+    wasPassed.current = passed
+  }, [passed, links])
+
   const facts =
     tasks.length > 0
       ? [
@@ -138,8 +151,9 @@ export default function Lesson({ course, lesson, number, prev, next, links = tru
       <Poster
         className="lesson__head"
         back={links ? { href: href.course(course.id), text: 'Все уроки' } : null}
-        label={`Урок ${number}`}
+        label={passed ? `Урок ${number} · пройден` : `Урок ${number}`}
         mark={number}
+        done={passed}
         title={lesson.title}
         facts={facts}
       >
@@ -205,6 +219,20 @@ export default function Lesson({ course, lesson, number, prev, next, links = tru
           </div>
         </section>
       )}
+
+      {finished && ready && (
+        <section className={`done ${passed ? 'done--ok' : ''}`} aria-live="polite">
+          <h2 className="done__title">{perfect ? 'Идеально!' : passed ? 'Молодец!' : 'Урок завершён'}</h2>
+          <p className="done__text">
+            {perfect
+              ? `Все задачи решены без ошибок и подсказок — ${xpEarned} XP из ${xpMax}.`
+              : passed
+                ? `Урок пройден: все задачи решены. Заработано ${xpEarned} XP из ${xpMax}.`
+                : `Решено ${solved} из ${tasks.length}. Заработано ${xpEarned} XP из ${xpMax}.`}
+          </p>
+        </section>
+      )}
+      {salute && <Confetti onDone={() => setSalute(false)} />}
 
       {links && (
         <nav className="lesson-nav">

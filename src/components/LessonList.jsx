@@ -15,6 +15,7 @@ export default function LessonList({ course, progress, onReset, links = true }) 
   const image = useContext(ImagesContext)
   const photo = course.teacher?.photo
   const photoSrc = photo ? (/^https?:\/\//.test(photo) ? photo : image(photo)?.src) : null
+  const cover = course.cover ? image(course.cover)?.src : null
   const hasProgress = Object.keys(tasks).length > 0 || Object.keys(progress?.quiz ?? {}).length > 0
   const all = courseTasks(course)
   const solvedAll = all.filter((t) => tasks[t.id]?.status === 'correct').length
@@ -35,9 +36,10 @@ export default function LessonList({ course, progress, onReset, links = true }) 
       <Poster
         className="poster--course"
         back={links ? { href: href.catalog(), text: 'Все курсы' } : null}
-        label={course.badge}
         title={course.title}
         facts={facts}
+        done={all.length > 0 && solvedAll === all.length}
+        aside={cover && <img className="poster__cover" src={cover} alt="" />}
       >
         {course.about && <p className="poster__about">{course.about}</p>}
         <div className="teacher">
@@ -58,10 +60,7 @@ export default function LessonList({ course, progress, onReset, links = true }) 
             <a key={l.id} className={`lesson-row ${total > 0 && solved === total ? 'lesson-row--done' : ''}`} href={links ? href.lesson(course.id, l.id) : undefined}>
               <span className="lesson-row__num">{i + 1}</span>
               <span className="lesson-row__body">
-                <span className="lesson-row__title">
-                  {l.title}
-                  {l.free && <span className="tag">Бесплатно</span>}
-                </span>
+                <span className="lesson-row__title">{l.title}</span>
                 <span className="lesson-row__desc">{(l.description ?? []).join(' · ')}</span>
               </span>
               <span className="lesson-row__progress">

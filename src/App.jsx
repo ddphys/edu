@@ -68,7 +68,7 @@ export default function App() {
     if (title) document.title = title
   }, [title])
 
-  // Вид страницы зависит от того, что открыто: у курса и урока — белый лист (см. начало styles.css)
+  // Вид страницы зависит от того, что открыто: у страниц ученика — белый лист (см. начало styles.css)
   useLayoutEffect(() => {
     document.documentElement.dataset.page = route.page
   }, [route.page])
@@ -102,8 +102,8 @@ export default function App() {
     if (confirm(`Сбросить весь прогресс и XP по курсу «${course.title}»?`)) actions.resetProgress(course.id)
   }
 
-  // Курс и урок открываются плакатной шапкой во всю ширину окна — она встаёт вплотную к шапке сайта
-  const poster = Boolean((route.page === 'course' && course) || (route.page === 'lesson' && lesson))
+  // Каталог, курс и урок открываются плакатной шапкой во всю ширину окна — она встаёт вплотную к шапке сайта
+  const poster = Boolean(route.page === 'catalog' || (route.page === 'course' && course) || (route.page === 'lesson' && lesson))
 
   let body
   if (route.page === 'catalog') body = <Catalog site={site} courses={courses} progress={progress} imageUrl={(c, name) => api.imageUrl(c.id, name)} />
