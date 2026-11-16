@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import Attach from './Attach.jsx'
 import MathText from './Math.jsx'
 import { calcXp, errorCost, errorsOf, hintCost, minXp, plural, taskMaxXp } from '../lib.js'
 import { typeOf } from '../types/index.js'
@@ -22,7 +23,8 @@ function xpBreakdown(task, course, hints, errors, xp) {
 //   task     — открытая часть задачи (без ответа)
 //   state    — сохранённое состояние, revealed — что уже можно показать (подсказки, разбор, ответ)
 //   actions  — { submit(input), hint(), skip() }: уходят в интерфейс api и возвращают результат
-export default function Task({ course, task, index, state, revealed, actions, onNext, hasNext }) {
+//   canAttach — ученику разрешено прикладывать фото решения (у задачи должно быть включено attach)
+export default function Task({ course, task, index, state, revealed, actions, canAttach, onNext, hasNext }) {
   const type = typeOf(task)
   const View = views[type?.id]
   const hintCount = task.hintCount ?? 0
@@ -145,6 +147,8 @@ export default function Task({ course, task, index, state, revealed, actions, on
           через {lockLeft}{' '}с.
         </div>
       )}
+
+      {task.attach && canAttach && <Attach courseId={course.id} taskId={task.id} />}
 
       {shownHints.map((h, i) => (
         <div className="hint" key={i}>

@@ -53,7 +53,7 @@ function TaskGroup({ group, firstNumber, st, taskProps }) {
 
 // course и lesson — открытая часть контента; прогресс и действия берутся из общего состояния
 export default function Lesson({ course, lesson, number, prev, next }) {
-  const { progress, actions, revealedOf } = useStore()
+  const { progress, actions, revealedOf, viewer } = useStore()
   const saved = progress.courses[course.id]
   const st = (t) => normalizeState(saved?.tasks?.[t.id])
   const tasks = allTasks(lesson)
@@ -78,6 +78,7 @@ export default function Lesson({ course, lesson, number, prev, next }) {
     task,
     state: st(task),
     revealed: revealedOf(course.id, task.id),
+    canAttach: Boolean(viewer?.features?.attachSolution),
     actions: {
       submit: (input) => actions.submitAnswer(course.id, task.id, input),
       hint: () => actions.takeHint(course.id, task.id),

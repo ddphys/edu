@@ -179,6 +179,48 @@ button.xp { border: 0; cursor: pointer; font-family: inherit; }
 
 .katex-display { overflow-x: auto; overflow-y: hidden; }
 
+/* Картинка в тексте. Ширина и высота известны заранее, поэтому место занято до загрузки */
+.figure { margin: 18px auto; }
+.figure img { display: block; width: 100%; height: auto; border-radius: 8px; }
+.figure figcaption { margin-top: 8px; text-align: center; font-size: 14px; color: var(--muted); }
+.figure--missing { padding: 14px 16px; border: 1px dashed #dcdde5; border-radius: 8px; color: var(--muted); font-size: 14px; }
+.math > :first-child { margin-top: 0; }
+.math > .figure:last-child { margin-bottom: 0; }
+
+/* Выбор варианта */
+.choice { display: grid; gap: 8px; margin: 24px 0; max-width: 640px; }
+.choice__note { font-size: 14px; color: var(--muted); }
+.option { display: flex; align-items: flex-start; gap: 12px; width: 100%; min-height: 48px; text-align: left; background: #fff; color: var(--text); border: 1px solid #dcdde5; border-radius: 10px; padding: 12px 16px; }
+.option .math { flex: 1; min-width: 0; }
+.option p { margin: 0; }
+.option:not(:disabled):hover { border-color: var(--accent); }
+.option:disabled { cursor: default; }
+.option__mark { flex: none; width: 20px; height: 20px; margin-top: 2px; border: 2px solid #c3c6d1; border-radius: 50%; background: #fff; }
+.option__mark--box { border-radius: 5px; }
+.option__tag { flex: none; font-size: 13px; color: var(--muted); margin-top: 2px; }
+.option.is-picked { border-color: var(--accent); background: var(--accent-soft); }
+.option.is-picked .option__mark { border-color: var(--accent); background: var(--accent); box-shadow: inset 0 0 0 3px #fff; }
+.option.is-tried { background: #f7f7fa; color: var(--muted); }
+.option.is-tried .option__mark { border-color: #e3e4ea; }
+.option.is-right { background: var(--green-bg); border-color: var(--green); }
+.option.is-right .option__mark { border-color: var(--green); background: var(--green); box-shadow: inset 0 0 0 3px #fff; }
+.option.is-wrong { background: var(--red-bg); border-color: #ffc3b9; }
+.option.is-wrong .option__mark { border-color: var(--red); background: var(--red); box-shadow: inset 0 0 0 3px #fff; }
+
+/* Фото своего решения */
+.attach { border: 1px dashed var(--accent-line); border-radius: 12px; padding: 18px 20px; margin: 0 0 16px; }
+.attach__title { font-size: 13px; font-weight: 600; margin-bottom: 6px; }
+.attach__note { margin: 0 0 14px; font-size: 14px; color: var(--muted); max-width: 560px; }
+.attach__list { list-style: none; display: flex; flex-wrap: wrap; gap: 10px; margin: 0 0 14px; padding: 0; }
+.attach__list li { position: relative; }
+.attach__list img { display: block; width: 88px; height: 88px; object-fit: cover; border-radius: 8px; border: 1px solid var(--line); }
+.attach__list button { position: absolute; top: -8px; right: -8px; width: 26px; height: 26px; border-radius: 50%; border: 1px solid #dcdde5; background: #fff; color: var(--text); font-size: 16px; line-height: 1; }
+.attach__list button:hover { border-color: var(--red); color: var(--red); }
+.attach__add { display: inline-block; cursor: pointer; }
+.attach__add.is-busy { opacity: .6; cursor: default; }
+.attach__add input { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
+.attach__add:focus-within { outline: 2px solid var(--accent); outline-offset: 2px; }
+
 .lesson-nav { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 56px; }
 .lesson-nav a { background: var(--card); border-radius: var(--radius); padding: 18px 24px; font-weight: 600; border: 1px solid transparent; }
 .lesson-nav a:hover { border-color: var(--accent-line); }

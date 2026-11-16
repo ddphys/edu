@@ -21,6 +21,13 @@
   "minShare": 0.25,
   "cooldownFromError": 3,
   "cooldownSeconds": 20,
+  "cover": "cover.svg",
+  "images": {
+    "cover.svg": {
+      "w": 800,
+      "h": 450
+    }
+  },
   "lessons": [
     {
       "id": "l1",

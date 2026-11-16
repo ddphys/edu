@@ -28,7 +28,8 @@
 //   addAttachment(courseId, taskId, file)   → обновлённый список
 //   removeAttachment(courseId, taskId, id)  → обновлённый список
 import { httpSource } from '../content/load.js'
+import { idbFiles } from './files.js'
 import { createLocalApi } from './local.js'
 import { browserKv } from './progress.js'
 
-export const api = createLocalApi({ source: httpSource, kv: browserKv })
+export const api = createLocalApi({ source: httpSource, kv: browserKv, files: idbFiles() })

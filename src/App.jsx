@@ -1,6 +1,7 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import Lesson from './components/Lesson.jsx'
 import LessonList from './components/LessonList.jsx'
+import { ImagesContext } from './components/Math.jsx'
 import { totalXp } from './api/progress.js'
 import { useStore } from './store.jsx'
 
@@ -11,7 +12,7 @@ const pct = (x) => Math.round(x * 100) + '%'
 const lessonIdFromHash = () => window.location.hash.match(/^#\/lesson\/(.+)$/)?.[1] ?? null
 
 export default function App() {
-  const { status, error, content, progress, actions } = useStore()
+  const { status, error, content, progress, actions, api } = useStore()
   const [lessonId, setLessonId] = useState(lessonIdFromHash)
   const [showRules, setShowRules] = useState(false)
 
@@ -23,6 +24,13 @@ export default function App() {
     window.addEventListener('hashchange', onHash)
     return () => window.removeEventListener('hashchange', onHash)
   }, [])
+
+  // Картинки курса: имя файла → адрес и размер
+  const course0 = content?.courses[0]
+  const images = useMemo(
+    () => (name) => (course0?.images?.[name] ? { src: api.imageUrl(course0.id, name), ...course0.images[name] } : null),
+    [api, course0],
+  )
 
   if (status === 'loading') return <div className="page muted">Загрузка…</div>
   if (status === 'error')
@@ -44,7 +52,7 @@ export default function App() {
   }
 
   return (
-    <>
+    <ImagesContext.Provider value={images}>
       <header className="topbar">
         <div className="topbar__in">
           <a className="topbar__title" href="#/">
@@ -84,6 +92,6 @@ export default function App() {
           <LessonList course={course} progress={progress.courses[course.id]} onReset={reset} />
         )}
       </div>
-    </>
+    </ImagesContext.Provider>
   )
 }
