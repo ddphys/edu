@@ -145,7 +145,7 @@ a.course-card:hover { border-color: var(--accent-line); box-shadow: 0 10px 28px 
 .hw-head { display: flex; justify-content: space-between; align-items: baseline; gap: 16px; }
 .hw-head__stat { color: var(--muted); white-space: nowrap; }
 .hw-head__stat b { color: var(--accent); }
-.hw { display: grid; gap: 20px; }
+.hw { display: grid; grid-template-columns: minmax(0, 1fr); gap: 20px; }
 .group-title { font-weight: 600; font-size: 15px; color: var(--muted); margin-bottom: 14px; }
 .steps { display: flex; flex-wrap: wrap; gap: 10px; padding-bottom: 24px; margin-bottom: 28px; border-bottom: 1px solid var(--line); }
 .step { width: 44px; height: 44px; border-radius: 50%; border: 2px solid transparent; background: var(--bg); color: #5c5f6e; font-weight: 600; }
@@ -198,7 +198,9 @@ a.course-card:hover { border-color: var(--accent-line); box-shadow: 0 10px 28px 
 .result__right { display: flex; align-items: center; gap: 16px; }
 .result__xp { font-weight: 700; font-size: 18px; white-space: nowrap; }
 
-.katex-display { overflow-x: auto; overflow-y: hidden; }
+/* Длинная формула прокручивается внутри своего блока и не растягивает страницу */
+.katex-display { overflow-x: auto; overflow-y: hidden; max-width: 100%; }
+.math { min-width: 0; }
 
 /* Картинка в тексте. Ширина и высота известны заранее, поэтому место занято до загрузки */
 .figure { margin: 18px auto; }
