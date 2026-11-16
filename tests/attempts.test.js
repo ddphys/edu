@@ -85,7 +85,7 @@ describe('addEvent', () => {
   })
 })
 
-describe('summarize: сводка для «Работы над ошибками»', () => {
+describe('summarize: сводка по задачам', () => {
   it('собирает по задачам неверные ответы, подсказки и время; задачи без ошибок не попадают', async () => {
     const { api, clock } = setup()
     await api.submitAnswer('demo', 't1', ['-8'], { ms: 40_000 })
