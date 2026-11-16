@@ -24,6 +24,8 @@ export default {
   title: 'Выбор варианта',
   hint: 'Ученик выбирает один вариант или отмечает несколько. В вариантах работают формулы и картинки.',
 
+  fields: ['options', 'multiple', 'correct'],
+
   create: () => ({ options: ['', ''], correct: [] }),
 
   split: (task) => ({

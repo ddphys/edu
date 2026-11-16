@@ -1,4 +1,6 @@
+import { useContext } from 'react'
 import { allTasks } from '../lib.js'
+import { ImagesContext } from './Math.jsx'
 
 const solvedOf = (l, tasks) => allTasks(l).filter((t) => tasks[t.id]?.status === 'correct').length
 
@@ -6,6 +8,10 @@ const solvedOf = (l, tasks) => allTasks(l).filter((t) => tasks[t.id]?.status ===
 export default function LessonList({ course, progress, onReset }) {
   const lessons = course.lessons ?? []
   const tasks = progress?.tasks ?? {}
+  // Фото преподавателя — картинка курса или ссылка
+  const image = useContext(ImagesContext)
+  const photo = course.teacher?.photo
+  const photoSrc = photo ? (/^https?:\/\//.test(photo) ? photo : image(photo)?.src) : null
   const hasProgress = Object.keys(tasks).length > 0 || Object.keys(progress?.quiz ?? {}).length > 0
 
   return (
@@ -16,7 +22,7 @@ export default function LessonList({ course, progress, onReset }) {
         <p className="hero__about">{course.about}</p>
         <div className="teacher">
           <div className="teacher__photo">
-            {course.teacher?.photo ? <img src={course.teacher.photo} alt="" /> : (course.teacher?.name ?? '?')[0]}
+            {photoSrc ? <img src={photoSrc} alt="" /> : (course.teacher?.name || '?')[0]}
           </div>
           <div>
             <div className="muted">Преподаватель</div>

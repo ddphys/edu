@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { Suspense, lazy, useEffect, useMemo, useState } from 'react'
 import Lesson from './components/Lesson.jsx'
 import LessonList from './components/LessonList.jsx'
 import { ImagesContext } from './components/Math.jsx'
@@ -9,16 +9,22 @@ import { useStore } from './store.jsx'
 // Так работает кнопка «Назад» в браузере и ссылку на урок можно переслать.
 const pct = (x) => Math.round(x * 100) + '%'
 
+// Редактор курса подгружается отдельно: на страницу ученика его код не попадает
+const Admin = lazy(() => import('./admin/Admin.jsx'))
+const isAdminHash = () => /^#\/admin\/?$/.test(window.location.hash)
+
 const lessonIdFromHash = () => window.location.hash.match(/^#\/lesson\/(.+)$/)?.[1] ?? null
 
 export default function App() {
   const { status, error, content, progress, actions, api } = useStore()
   const [lessonId, setLessonId] = useState(lessonIdFromHash)
+  const [admin, setAdmin] = useState(isAdminHash)
   const [showRules, setShowRules] = useState(false)
 
   useEffect(() => {
     const onHash = () => {
       setLessonId(lessonIdFromHash())
+      setAdmin(isAdminHash())
       window.scrollTo(0, 0)
     }
     window.addEventListener('hashchange', onHash)
@@ -31,6 +37,13 @@ export default function App() {
     () => (name) => (course0?.images?.[name] ? { src: api.imageUrl(course0.id, name), ...course0.images[name] } : null),
     [api, course0],
   )
+
+  if (admin)
+    return (
+      <Suspense fallback={<div className="page muted">Открываем редактор…</div>}>
+        <Admin />
+      </Suspense>
+    )
 
   if (status === 'loading') return <div className="page muted">Загрузка…</div>
   if (status === 'error')

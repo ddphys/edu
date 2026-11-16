@@ -19,6 +19,9 @@ import { DEFAULT_TYPE, typeOf } from '../types/index.js'
 
 export const FORMAT = 1
 
+// Картинка тяжелее этого считается тяжёлой: редактор сжимает её, проверка предупреждает
+export const HEAVY_IMAGE_BYTES = 300 * 1024
+
 export const paths = {
   site: 'site.json',
   course: (id) => `courses/${id}/course.json`,

@@ -52,7 +52,10 @@ function TaskGroup({ group, firstNumber, st, taskProps }) {
 }
 
 // course и lesson — открытая часть контента; прогресс и действия берутся из общего состояния
-export default function Lesson({ course, lesson, number, prev, next }) {
+// links — адреса для переходов: { back, lesson(id) }; без них (предпросмотр в редакторе) ссылок нет
+const DEFAULT_LINKS = { back: '#/', lesson: (id) => `#/lesson/${id}` }
+
+export default function Lesson({ course, lesson, number, prev, next, links = DEFAULT_LINKS }) {
   const { progress, actions, revealedOf, viewer } = useStore()
   const saved = progress.courses[course.id]
   const st = (t) => normalizeState(saved?.tasks?.[t.id])
@@ -91,9 +94,11 @@ export default function Lesson({ course, lesson, number, prev, next }) {
 
   return (
     <div className="lesson">
-      <a className="back" href="#/">
-        ← Все уроки
-      </a>
+      {links && (
+        <a className="back" href={links.back}>
+          ← Все уроки
+        </a>
+      )}
 
       <header className="lesson__head">
         <div className="muted">Урок {number}</div>
@@ -154,24 +159,26 @@ export default function Lesson({ course, lesson, number, prev, next }) {
         </section>
       )}
 
-      <nav className="lesson-nav">
-        {prev ? (
-          <a href={`#/lesson/${prev.id}`}>
-            <small>← Предыдущий урок</small>
-            {prev.title}
-          </a>
-        ) : (
-          <span />
-        )}
-        {next ? (
-          <a className="lesson-nav__next" href={`#/lesson/${next.id}`}>
-            <small>Следующий урок →</small>
-            {next.title}
-          </a>
-        ) : (
-          <span />
-        )}
-      </nav>
+      {links && (
+        <nav className="lesson-nav">
+          {prev ? (
+            <a href={links.lesson(prev.id)}>
+              <small>← Предыдущий урок</small>
+              {prev.title}
+            </a>
+          ) : (
+            <span />
+          )}
+          {next ? (
+            <a className="lesson-nav__next" href={links.lesson(next.id)}>
+              <small>Следующий урок →</small>
+              {next.title}
+            </a>
+          ) : (
+            <span />
+          )}
+        </nav>
+      )}
     </div>
   )
 }

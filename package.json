@@ -11,6 +11,7 @@
     "check": "node scripts/content-fs.js"
   },
   "dependencies": {
+    "fflate": "^0.8.3",
     "katex": "^0.19.1",
     "react": "^19.3.1",
     "react-dom": "^19.3.1"

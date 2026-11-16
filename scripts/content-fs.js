@@ -3,14 +3,11 @@
 import fs from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { filesToContent, paths } from '../src/content/format.js'
+import { HEAVY_IMAGE_BYTES, filesToContent, paths } from '../src/content/format.js'
 import { errorsOnly, formatIssues, validateContent, warningsOnly } from '../src/content/validate.js'
 import { courseTasks } from '../src/lib.js'
 
 export const CONTENT_DIR = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../public/content')
-
-// Картинка тяжелее этого — предупреждение
-export const HEAVY_IMAGE_BYTES = 500 * 1024
 
 // Читает контент из папки и возвращает { content, issues }.
 // issues — замечания к самим файлам (битый JSON, нет картинки на диске и т. п.)
