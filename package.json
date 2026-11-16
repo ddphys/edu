@@ -8,7 +8,8 @@
     "build": "vite build",
     "preview": "vite preview",
     "test": "vitest run",
-    "check": "node scripts/content-fs.js"
+    "check": "node scripts/content-fs.js",
+    "e2e": "node e2e/walk.cjs"
   },
   "dependencies": {
     "fflate": "^0.8.3",
