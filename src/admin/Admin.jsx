@@ -4,6 +4,7 @@ import { memoryFiles } from '../api/files.js'
 import { createLocalApi } from '../api/local.js'
 import { memoryKv } from '../api/progress.js'
 import { ImagesContext } from '../components/Math.jsx'
+import ThemeToggle from '../components/ThemeToggle.jsx'
 import { HEAVY_IMAGE_BYTES, splitCourse } from '../content/format.js'
 import { compressImage, imageSize } from '../images.js'
 import { plural } from '../lib.js'
@@ -429,6 +430,7 @@ export default function Admin() {
               {saved === 'saved' ? 'Черновик сохранён в этом браузере' : saved === 'saving' ? 'Сохраняем…' : 'Не удалось сохранить черновик — выгрузите архив, чтобы не потерять правки'}
             </span>
             <span className="adm-top__right">
+              <ThemeToggle />
               <button type="button" className={`adm-count ${errorCount ? 'adm-count--error' : warnCount ? 'adm-count--warn' : 'adm-count--ok'}`} aria-expanded={showIssues} onClick={() => setShowIssues((v) => !v)}>
                 {errorCount || warnCount ? `Замечания: ${errorCount ? `${errorCount} ${plural(errorCount, 'ошибка', 'ошибки', 'ошибок')}` : ''}${errorCount && warnCount ? ', ' : ''}${warnCount ? `${warnCount} ${plural(warnCount, 'предупреждение', 'предупреждения', 'предупреждений')}` : ''}` : 'Замечаний нет'}
               </button>

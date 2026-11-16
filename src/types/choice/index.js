@@ -57,6 +57,13 @@ export default {
   // Тексты с разметкой — проверка контента ищет в них битые формулы и картинки
   texts: (task) => (task.options ?? []).map((text, i) => ({ field: `options/${i}`, text, what: `Вариант ${i + 1}` })),
 
+  // Лист для печати: варианты на выбор
+  sheet: (task) => ({
+    title: task.multiple ? 'Отметьте все верные варианты:' : 'Выберите один вариант:',
+    items: task.options ?? [],
+    numbered: true,
+  }),
+
   emptyInput: () => [],
 
   check(task, input, state) {

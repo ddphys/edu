@@ -114,9 +114,9 @@ export default function Lesson({ course, lesson, number, prev, next, links = tru
     revealed: revealedOf(course.id, task.id),
     canAttach: Boolean(viewer?.features?.attachSolution),
     actions: {
-      submit: (input) => actions.submitAnswer(course.id, task.id, input),
-      hint: () => actions.takeHint(course.id, task.id),
-      skip: () => actions.skipTask(course.id, task.id),
+      submit: (input, meta) => actions.submitAnswer(course.id, task.id, input, meta),
+      hint: (meta) => actions.takeHint(course.id, task.id, meta),
+      skip: (meta) => actions.skipTask(course.id, task.id, meta),
     },
   })
 
@@ -161,6 +161,14 @@ export default function Lesson({ course, lesson, number, prev, next, links = tru
               Решено {solved} из {tasks.length} · {xpEarned} XP
             </div>
           </div>
+          {links && (
+            <a className="print-link" href={href.print(course.id, lesson.id)}>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <path d="M6 9V3h12v6M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2M6 14h12v7H6z" />
+              </svg>
+              Версия для печати
+            </a>
+          )}
 
           <div className="hw">
             {lesson.tasks.map((item) => {

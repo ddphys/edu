@@ -67,6 +67,9 @@ export default {
     checkTolerance(task.tolerance, 'tolerance')
   },
 
+  // Лист для печати: у задачи с несколькими полями — что именно нужно найти
+  sheet: (task) => (task.parts ? { title: 'Найдите:', items: task.parts.map((p) => p.label) } : null),
+
   // Пустой ввод: по строке на каждое поле
   emptyInput: (task) => getParts(task).map(() => ''),
 

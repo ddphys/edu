@@ -1,6 +1,7 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import Attach from './Attach.jsx'
 import MathText from './Math.jsx'
+import { useActiveTime } from './useActiveTime.js'
 import { calcXp, errorCost, errorsOf, hintCost, minXp, plural, taskMaxXp } from '../lib.js'
 import { typeOf } from '../types/index.js'
 import { views } from '../types/views.js'
@@ -44,6 +45,11 @@ export default function Task({ course, task, index, state, revealed, actions, ca
   const [delta, setDelta] = useState(null) // всплывающее «−4» у плашки XP
   const [busy, setBusy] = useState(false)
 
+  // Сколько задача была на экране с прошлого действия — уходит в журнал попыток вместе с ответом
+  const root = useRef(null)
+  const takeTime = useActiveTime(root, !done)
+  const meta = () => ({ ms: takeTime() })
+
   // Пауза от перебора: тикаем, пока она идёт
   const [now, setNow] = useState(Date.now)
   const lockLeft = Math.max(0, Math.ceil(((state.lockUntil || 0) - now) / 1000))
@@ -82,14 +88,14 @@ export default function Task({ course, task, index, state, revealed, actions, ca
 
   async function useHint() {
     if (hintsUsed >= hintCount) return
-    const result = await run(actions.hint)
+    const result = await run(() => actions.hint(meta()))
     if (result?.kind === 'hint') showDelta(potential - calcXp(task, course, result.state.hintsUsed, errors))
   }
 
   async function submit(e) {
     e.preventDefault()
     if (lockLeft > 0) return
-    const result = await run(() => actions.submit(input))
+    const result = await run(() => actions.submit(input, meta()))
     if (!result) return
     // Ввод не разобран — это опечатка, а не ошибка в решении: XP не снимается
     if (result.kind === 'invalid') return setMessage({ text: result.message })
@@ -102,7 +108,7 @@ export default function Task({ course, task, index, state, revealed, actions, ca
   }
 
   async function skip() {
-    const result = await run(actions.skip)
+    const result = await run(() => actions.skip(meta()))
     if (!result) return
     setConfirmSkip(false)
     setMessage(null)
@@ -118,7 +124,7 @@ export default function Task({ course, task, index, state, revealed, actions, ca
   const pauseText = `Сделайте паузу и перепроверьте решение — ответить можно через ${lockLeft}\u00a0с.`
 
   return (
-    <div className="task">
+    <div className="task" ref={root}>
       <div className="task__head">
         {showTitle ? (
           <h3 className="task__title">
