@@ -179,7 +179,8 @@ textarea.adm-input { resize: vertical; line-height: 1.45; min-height: 40px; }
 .adm-preview .poster__fact dd { font-size: 17px; }
 .adm-preview .poster__fact dt { margin: 0; font-size: 11px; }
 .adm-preview .poster__body--aside { display: block; }
-.adm-preview .poster__aside { display: none; }
+.adm-preview .poster__aside { margin-top: 16px; }
+.adm-preview .poster__cover { aspect-ratio: auto; height: 56px; }
 .adm-preview .course-card { max-width: none; }
 .adm-preview .done { padding: 22px 20px 24px; }
 .adm-preview .lesson-row { grid-template-columns: 46px 1fr; gap: 6px 14px; padding: 18px; align-items: start; }

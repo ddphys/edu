@@ -100,13 +100,14 @@ export default function Lesson({ course, lesson, number, prev, next, links = tru
   const finished = tasks.length > 0 && tasks.every((t) => st(t).status !== 'pending')
   const passed = finished && solved === tasks.length
   const perfect = passed && xpEarned === xpMax
-  // Салют — только в ту минуту, когда решена последняя задача, а не при каждом заходе на пройденный урок
-  const wasPassed = useRef(passed)
-  const [salute, setSalute] = useState(false)
+  // Салют — только в ту минуту, когда дан ответ на последнюю задачу, а не при каждом заходе на пройденный урок.
+  // Все задачи решены — салют в полную силу; решена часть — поскромнее; не решено ничего — без салюта.
+  const wasFinished = useRef(finished)
+  const [salute, setSalute] = useState(0)
   useEffect(() => {
-    if (passed && !wasPassed.current && links) setSalute(true)
-    wasPassed.current = passed
-  }, [passed, links])
+    if (finished && !wasFinished.current && links && solved > 0) setSalute(passed ? 1 : 0.35)
+    wasFinished.current = finished
+  }, [finished, passed, solved, links])
 
   const facts =
     tasks.length > 0
@@ -151,7 +152,7 @@ export default function Lesson({ course, lesson, number, prev, next, links = tru
       <Poster
         className="lesson__head"
         back={links ? { href: href.course(course.id), text: 'Все уроки' } : null}
-        label={passed ? `Урок ${number} · пройден` : `Урок ${number}`}
+        label={passed ? `Урок ${number} · пройден` : finished ? `Урок ${number} · завершён` : `Урок ${number}`}
         mark={number}
         done={passed}
         title={lesson.title}
@@ -221,18 +222,20 @@ export default function Lesson({ course, lesson, number, prev, next, links = tru
       )}
 
       {finished && ready && (
-        <section className={`done ${passed ? 'done--ok' : ''}`} aria-live="polite">
-          <h2 className="done__title">{perfect ? 'Идеально!' : passed ? 'Молодец!' : 'Урок завершён'}</h2>
+        <section className={`done ${passed ? 'done--ok' : solved > 0 ? 'done--fine' : ''}`} aria-live="polite">
+          <h2 className="done__title">{perfect ? 'Идеально!' : passed ? 'Молодец!' : solved > 0 ? 'Ура, урок завершён!' : 'Урок завершён'}</h2>
           <p className="done__text">
             {perfect
               ? `Все задачи решены без ошибок и подсказок — ${xpEarned} XP из ${xpMax}.`
               : passed
                 ? `Урок пройден: все задачи решены. Заработано ${xpEarned} XP из ${xpMax}.`
-                : `Решено ${solved} из ${tasks.length}. Заработано ${xpEarned} XP из ${xpMax}.`}
+                : solved > 0
+                  ? `Решено ${solved} из ${tasks.length} — это уже здорово. Заработано ${xpEarned} XP из ${xpMax}.`
+                  : 'Засчитанных задач нет, зато все решения открыты — разберите их.'}
           </p>
         </section>
       )}
-      {salute && <Confetti onDone={() => setSalute(false)} />}
+      {salute > 0 && <Confetti amount={salute} onDone={() => setSalute(0)} />}
 
       {links && (
         <nav className="lesson-nav">

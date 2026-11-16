@@ -1,12 +1,13 @@
 import { useEffect, useRef } from 'react'
 
-// Салют из цветных бумажек поверх страницы — когда ученик решил последнюю задачу урока.
+// Салют из цветных бумажек поверх страницы — когда ученик ответил на последнюю задачу урока.
 // Два залпа из нижних углов, бумажки летят к середине и падают. Сам убирается через три секунды.
+// amount — сила салюта: 1 — полный, меньше — скромнее (когда решена только часть задач).
 // Если на устройстве отключены анимации, салюта нет.
 const COLORS = ['#2f54eb', '#08824a', '#ffc83d', '#ff5a5f', '#8fb0ff', '#3fcf8e']
 const SECONDS = 3.2
 
-export default function Confetti({ onDone }) {
+export default function Confetti({ amount = 1, onDone }) {
   const ref = useRef(null)
   const done = useRef(onDone)
   done.current = onDone
@@ -22,7 +23,7 @@ export default function Confetti({ onDone }) {
     canvas.height = H * ratio
     ctx.scale(ratio, ratio)
 
-    const count = Math.min(220, 90 + Math.round(W / 8))
+    const count = Math.round(Math.min(220, 90 + Math.round(W / 8)) * amount)
     const power = Math.sqrt(H) * 46
     const parts = Array.from({ length: count }, (_, i) => {
       const left = i % 2 === 0
@@ -79,7 +80,7 @@ export default function Confetti({ onDone }) {
     }
     frame = requestAnimationFrame(tick)
     return () => cancelAnimationFrame(frame)
-  }, [])
+  }, [amount])
 
   return <canvas ref={ref} className="confetti" aria-hidden="true" />
 }

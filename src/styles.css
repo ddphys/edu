@@ -404,6 +404,10 @@ a.lesson-row[href]:hover .lesson-row__arrow { color: var(--accent); transform: t
 .done--ok { padding: 40px 36px 42px; background: var(--poster-done); color: var(--poster-text); }
 .done--ok .done__title { font-size: clamp(34px, 9cqi, 72px); line-height: 1; letter-spacing: -.03em; }
 .done--ok .done__text { margin-top: 16px; color: inherit; opacity: .92; }
+/* Решена часть задач — тоже хвалим, но спокойнее */
+.done--fine { background: var(--accent-soft); }
+.done--fine .done__title { font-size: clamp(26px, 6cqi, 44px); color: var(--accent); }
+.done--fine .done__text { color: var(--text); }
 .done + .lesson-nav { margin-top: 12px; }
 .confetti { position: fixed; inset: 0; z-index: 50; width: 100%; height: 100%; pointer-events: none; }
 
@@ -438,7 +442,8 @@ a.lesson-row[href]:hover .lesson-row__arrow { color: var(--accent); transform: t
   .poster__fact dd { font-size: 17px; letter-spacing: -.02em; }
   .poster__fact dt { margin: 0; font-size: 11px; }
   .poster__body--aside { display: block; }
-  .poster__aside { display: none; }
+  .poster__aside { margin-top: 16px; }
+  .poster__cover { aspect-ratio: auto; height: 56px; }
   .course-card { max-width: none; }
   .done { padding: 22px 20px 24px; }
   .done--ok { padding: 30px 20px 32px; }
