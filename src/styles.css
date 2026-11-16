@@ -430,6 +430,9 @@ a.lesson-row[href]:hover .lesson-row__arrow { color: var(--accent); transform: t
   .card--row > .task { padding: 2px 20px 20px; }
   .task__title { font-size: 18px; }
   .section-title { font-size: 21px; }
+  .hw-head { flex-direction: column; gap: 0; }
+  .hw-head .section-title { margin-bottom: 6px; }
+  .hw-head__stat { margin-bottom: 16px; }
   .lesson-nav a { font-size: 15px; }
   .hw { gap: 14px; }
   .video__quiz { padding: 12px; }
