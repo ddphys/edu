@@ -1,4 +1,5 @@
-import { course } from './data/course.js'
+// Чистые функции без обращения к контенту и хранилищу: их одинаково используют
+// страница ученика, редактор, проверка контента при сборке и (позже) сервер.
 
 // ---------- Видео ----------
 // Принимает ссылку на видео и определяет платформу. Понимает:
@@ -29,14 +30,23 @@ export function parseVideo(input) {
   return null
 }
 
+export const VIDEO_PLATFORMS = { youtube: 'YouTube', rutube: 'Rutube', kinescope: 'Kinescope', file: 'видеофайл' }
+
 // ---------- Задачи урока ----------
 // В списке задач урока могут стоять отдельные задачи и группы { title, tasks: [...] }.
-// Эта функция возвращает все задачи урока одним плоским списком.
+export const isGroup = (item) => Array.isArray(item?.tasks)
+
+// Все задачи урока одним плоским списком.
 export function allTasks(lesson) {
-  return (lesson.tasks ?? []).flatMap((t) => (Array.isArray(t.tasks) ? t.tasks : [t]))
+  return (lesson?.tasks ?? []).flatMap((t) => (isGroup(t) ? t.tasks : [t]))
 }
 
-// ---------- Проверка ответа ----------
+// Все задачи курса одним плоским списком.
+export function courseTasks(course) {
+  return (course?.lessons ?? []).flatMap(allTasks)
+}
+
+// ---------- Разбор числа ----------
 // Понимает число так, как его набирают люди:
 //   пробелы (в том числе неразрывные) не учитываются — « 1 000 », «- 6»;
 //   дефис, минус и тире — один и тот же знак: -6, −6, –6, —6;
@@ -45,11 +55,14 @@ export function allTasks(lesson) {
 export function parseNumber(s) {
   const t = String(s ?? '')
     .replace(/\s/g, '')
-    .replace(/[\u2010-\u2015\u2212\uFE58\uFE63\uFF0D]/g, '-')
-    .replace(/[,\uFF0C]/g, '.')
+    .replace(/[‐-―−﹘﹣－]/g, '-')
+    .replace(/[,，]/g, '.')
   if (!/^[+-]?(\d+\.?\d*|\.\d+)$/.test(t)) return null
   return Number(t)
 }
+
+// Число так, как его видит ученик: с запятой
+export const fmtNumber = (n) => String(n).replace('.', ',')
 
 // На айфоне у цифровой клавиатуры нет минуса, поэтому там открываем обычную
 export const answerInputMode =
@@ -58,38 +71,52 @@ export const answerInputMode =
     ? 'text'
     : 'decimal'
 
-// У задачи может быть одно поле ответа (answer) или несколько (parts).
-// Внутри всё приводится к списку полей.
-export function getParts(task) {
-  return task.parts ?? [{ label: 'Ваш ответ', answer: task.answer, tolerance: task.tolerance }]
-}
-
-export function isCorrect(part, raw) {
-  const n = parseNumber(raw)
-  if (n === null) return false
-  return Math.abs(n - part.answer) <= (part.tolerance ?? 0) + 1e-9
-}
-
 // ---------- XP ----------
+// Настройки XP лежат в курсе (course). Это значения по умолчанию для нового курса.
+export const DEFAULT_XP_RULES = {
+  // Цена задачи по уровню сложности (level: 1 — очень простая … 5 — очень сложная)
+  levelXp: { 1: 5, 2: 10, 3: 20, 4: 35, 5: 50 },
+  defaultLevel: 2,
+  // Штрафы — доля от цены задачи
+  errorPenalty: 0.2,
+  hintPenalty: 0.25,
+  // Если ученик в итоге решил сам, он получает не меньше этой доли
+  minShare: 0.25,
+  // Защита от перебора: начиная с этой ошибки после каждой неверной отправки — пауза
+  cooldownFromError: 3,
+  cooldownSeconds: 20,
+}
+
 // Цена задачи зависит от уровня сложности. Каждая ошибка и каждая подсказка
 // снимают фиксированную часть цены (вычитание, а не умножение — легко посчитать в уме).
 // Решил сам — получаешь не меньше minShare от цены. «Я не знаю» — 0.
-export function taskMaxXp(task) {
+export function taskMaxXp(task, course) {
   return task.xp ?? course.levelXp[task.level ?? course.defaultLevel]
 }
 
-export const errorCost = (task) => Math.max(1, Math.round(taskMaxXp(task) * course.errorPenalty))
-export const hintCost = (task) => Math.max(1, Math.round(taskMaxXp(task) * course.hintPenalty))
-export const minXp = (task) => Math.max(1, Math.round(taskMaxXp(task) * course.minShare))
+export const errorCost = (task, course) => Math.max(1, Math.round(taskMaxXp(task, course) * course.errorPenalty))
+export const hintCost = (task, course) => Math.max(1, Math.round(taskMaxXp(task, course) * course.hintPenalty))
+export const minXp = (task, course) => Math.max(1, Math.round(taskMaxXp(task, course) * course.minShare))
 
-export function calcXp(task, hintsUsed, errors) {
-  const raw = taskMaxXp(task) - errors * errorCost(task) - hintsUsed * hintCost(task)
-  return Math.max(minXp(task), raw)
+export function calcXp(task, course, hintsUsed, errors) {
+  const raw = taskMaxXp(task, course) - errors * errorCost(task, course) - hintsUsed * hintCost(task, course)
+  return Math.max(minXp(task, course), raw)
 }
 
 // Пауза после неверной отправки: с cooldownFromError-й ошибки, каждый раз cooldownSeconds.
-export function cooldownAfter(errors) {
+export function cooldownAfter(errors, course) {
   return errors >= course.cooldownFromError ? course.cooldownSeconds * 1000 : 0
+}
+
+// ---------- Состояние задачи ----------
+export const emptyTaskState = {
+  status: 'pending',
+  errors: 0, // сколько раз отправлен неверный ответ
+  lockUntil: 0, // до какого момента (ms) нельзя отправлять ответ — пауза от перебора
+  hintsUsed: 0,
+  answers: [], // введённые ответы (что именно здесь лежит — решает тип задачи)
+  okParts: [], // какие поля уже решены верно
+  xp: 0,
 }
 
 // Старые сохранения хранили attempts (с учётом верной попытки), новые — errors.
@@ -98,38 +125,15 @@ export function errorsOf(state) {
   return Math.max(0, (state.attempts || 0) - (state.status === 'correct' ? 1 : 0))
 }
 
+// Сохранённое состояние → полное: недостающие поля берутся из пустого состояния,
+// число ошибок — с учётом старых сохранений.
+export function normalizeState(state) {
+  return { ...emptyTaskState, ...state, errors: errorsOf(state ?? {}) }
+}
+
 export function plural(n, one, few, many) {
   const m10 = n % 10, m100 = n % 100
   if (m10 === 1 && m100 !== 11) return one
   if (m10 >= 2 && m10 <= 4 && (m100 < 12 || m100 > 14)) return few
   return many
-}
-
-// ---------- Состояние (localStorage) ----------
-const KEY = 'edu-progress-v1'
-
-export function loadProgress() {
-  try {
-    return JSON.parse(localStorage.getItem(KEY)) || {}
-  } catch {
-    return {}
-  }
-}
-
-export function saveProgress(p) {
-  try {
-    localStorage.setItem(KEY, JSON.stringify(p))
-  } catch {
-    /* localStorage может быть недоступен — работаем без сохранения */
-  }
-}
-
-export const emptyTaskState = {
-  status: 'pending',
-  errors: 0, // сколько раз отправлен неверный ответ
-  lockUntil: 0, // до какого момента (ms) нельзя отправлять ответ — пауза от перебора
-  hintsUsed: 0,
-  answers: [], // введённые ответы по полям
-  okParts: [], // какие поля уже решены верно
-  xp: 0,
 }

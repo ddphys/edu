@@ -1,24 +1,39 @@
-import { course, lessons } from '../data/course.js'
+import { useContext } from 'react'
 import { allTasks } from '../lib.js'
+import { href } from '../routes.js'
+import { ImagesContext } from './Math.jsx'
 
-const solvedOf = (l, p) => allTasks(l).filter((t) => p[t.id]?.status === 'correct').length
+const solvedOf = (l, tasks) => allTasks(l).filter((t) => tasks[t.id]?.status === 'correct').length
 
-export default function LessonList({ progress, onReset }) {
-  const hasProgress = Object.keys(progress).length > 0
+// Страница курса: описание и список уроков. progress — сохранённый прогресс по этому курсу.
+// links: false — без переходов (предпросмотр в редакторе).
+export default function LessonList({ course, progress, onReset, links = true }) {
+  const lessons = course.lessons ?? []
+  const tasks = progress?.tasks ?? {}
+  // Фото преподавателя — картинка курса или ссылка
+  const image = useContext(ImagesContext)
+  const photo = course.teacher?.photo
+  const photoSrc = photo ? (/^https?:\/\//.test(photo) ? photo : image(photo)?.src) : null
+  const hasProgress = Object.keys(tasks).length > 0 || Object.keys(progress?.quiz ?? {}).length > 0
 
   return (
     <>
+      {links && (
+        <a className="back" href={href.catalog()}>
+          ← Все курсы
+        </a>
+      )}
       <section className="hero">
         <div className="muted">{course.badge}</div>
         <h1>{course.title}</h1>
         <p className="hero__about">{course.about}</p>
         <div className="teacher">
           <div className="teacher__photo">
-            {course.teacher.photo ? <img src={course.teacher.photo} alt="" /> : course.teacher.name[0]}
+            {photoSrc ? <img src={photoSrc} alt="" /> : (course.teacher?.name || '?')[0]}
           </div>
           <div>
             <div className="muted">Преподаватель</div>
-            {course.teacher.name}
+            {course.teacher?.name}
           </div>
         </div>
       </section>
@@ -26,10 +41,10 @@ export default function LessonList({ progress, onReset }) {
       <h2 className="list-title">Уроки</h2>
       <nav className="lessons">
         {lessons.map((l, i) => {
-          const solved = solvedOf(l, progress)
+          const solved = solvedOf(l, tasks)
           const total = allTasks(l).length
           return (
-            <a key={l.id} className="lesson-row" href={`#/lesson/${l.id}`}>
+            <a key={l.id} className="lesson-row" href={links ? href.lesson(course.id, l.id) : undefined}>
               <span className="lesson-row__num">{i + 1}</span>
               <span className="lesson-row__body">
                 <span className="lesson-row__title">
@@ -62,7 +77,7 @@ export default function LessonList({ progress, onReset }) {
 
       {hasProgress && (
         <button className="link-btn" onClick={onReset}>
-          Сбросить прогресс
+          Сбросить прогресс по курсу
         </button>
       )}
     </>

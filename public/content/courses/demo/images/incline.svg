@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="360" height="220" viewBox="0 0 360 220">
+<rect width="360" height="220" fill="#fff"/>
+<defs><marker id="a" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 10 5 0 10z" fill="#2a2c35"/></marker><marker id="b" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 10 5 0 10z" fill="#4a6cd4"/></marker><marker id="m" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 10 5 0 10z" fill="#8b8fa0"/></marker></defs>
+<path d="M40 190 L320 190 L320 28.3 Z" fill="#eef2fd" stroke="#2a2c35" stroke-width="2" stroke-linejoin="round"/>
+<g transform="translate(210.0 91.9) rotate(-30)">
+<rect x="-32" y="-40" width="64" height="40" rx="4" fill="#fff" stroke="#2a2c35" stroke-width="2"/>
+<line x1="-40" y1="-56" x2="-104" y2="-56" stroke="#4a6cd4" stroke-width="2.5" marker-end="url(#b)"/>
+<text x="-78" y="-66" font-family="Georgia, 'Times New Roman', serif" font-style="italic" font-size="20" fill="#4a6cd4">a</text>
+</g>
+<path d="M92 190 A52 52 0 0 0 85.0 164.0" fill="none" stroke="#2a2c35" stroke-width="1.5"/>
+<text x="102" y="180" font-family="Georgia, 'Times New Roman', serif" font-style="italic" font-size="20" fill="#2a2c35">α</text>
+</svg>

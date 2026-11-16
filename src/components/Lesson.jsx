@@ -1,7 +1,9 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import Video from './Video.jsx'
 import Task from './Task.jsx'
-import { allTasks, emptyTaskState } from '../lib.js'
+import { allTasks, isGroup, normalizeState } from '../lib.js'
+import { href } from '../routes.js'
+import { useStore } from '../store.jsx'
 
 const STATUS = {
   pending: ['gray', 'ждёт решения'],
@@ -11,7 +13,7 @@ const STATUS = {
 }
 
 // Несколько задач в одной ячейке: сверху номера, ниже выбранная задача
-function TaskGroup({ group, firstNumber, st, setTaskState }) {
+function TaskGroup({ group, firstNumber, st, taskProps }) {
   // Открываем первую ещё не решённую задачу
   const [active, setActive] = useState(() => {
     const i = group.tasks.findIndex((t) => st(t).status === 'pending')
@@ -41,10 +43,8 @@ function TaskGroup({ group, firstNumber, st, setTaskState }) {
       </div>
       <Task
         key={task.id}
-        task={task}
+        {...taskProps(task)}
         index={firstNumber + active - 1}
-        state={st(task)}
-        onChange={(s) => setTaskState(task.id, s)}
         hasNext={active < group.tasks.length - 1}
         onNext={() => setActive(active + 1)}
       />
@@ -52,20 +52,84 @@ function TaskGroup({ group, firstNumber, st, setTaskState }) {
   )
 }
 
-export default function Lesson({ lesson, number, prev, next, progress, setTaskState, quizState, onQuizAnswer }) {
-  const st = (t) => progress[t.id] || emptyTaskState
+// course и lesson — открытая часть контента; прогресс и действия берутся из общего состояния
+// Отдельная задача урока. Решённая в прошлый раз свёрнута в строку и раскрывается по щелчку;
+// решённая только что остаётся открытой — ученик читает разбор.
+function TaskCard({ props, number }) {
+  const { task, state } = props
+  const [wasDone] = useState(state.status !== 'pending')
+  const [open, setOpen] = useState(false)
+  if (!wasDone)
+    return (
+      <div className="card">
+        <Task {...props} index={number - 1} hasNext={false} />
+      </div>
+    )
+  const ok = state.status === 'correct'
+  return (
+    <div className="card card--row">
+      <button type="button" className="task-row" aria-expanded={open} onClick={() => setOpen((v) => !v)}>
+        <span className={`task-row__mark ${ok ? 'is-ok' : ''}`} aria-hidden="true">
+          {ok ? '✓' : '–'}
+        </span>
+        <span className="task-row__title">
+          {number}. {task.title}
+        </span>
+        <span className="task-row__xp">{ok ? `+${state.xp} XP` : 'не засчитана'}</span>
+        <span className="task-row__chev" aria-hidden="true">
+          {open ? '▾' : '▸'}
+        </span>
+      </button>
+      {open && <Task {...props} index={number - 1} hasNext={false} showTitle={false} />}
+    </div>
+  )
+}
+
+// links: false — без переходов между страницами (предпросмотр в редакторе)
+export default function Lesson({ course, lesson, number, prev, next, links = true }) {
+  const { progress, actions, revealedOf, viewer } = useStore()
+  const saved = progress.courses[course.id]
+  const st = (t) => normalizeState(saved?.tasks?.[t.id])
   const tasks = allTasks(lesson)
-  const xpEarned = tasks.reduce((s, t) => s + st(t).xp, 0)
+  const xpEarned = tasks.reduce((s, t) => s + (st(t).xp || 0), 0)
   const solved = tasks.filter((t) => st(t).status === 'correct').length
+
+  // Открытые подсказки и разборы уже начатых задач приходят отдельным запросом
+  const [ready, setReady] = useState(false)
+  useEffect(() => {
+    let alive = true
+    actions
+      .loadRevealed(course.id, allTasks(lesson).map((t) => t.id))
+      .catch(() => {})
+      .then(() => alive && setReady(true))
+    return () => {
+      alive = false
+    }
+  }, [actions, course.id, lesson])
+
+  const taskProps = (task) => ({
+    course,
+    task,
+    state: st(task),
+    revealed: revealedOf(course.id, task.id),
+    canAttach: Boolean(viewer?.features?.attachSolution),
+    actions: {
+      submit: (input) => actions.submitAnswer(course.id, task.id, input),
+      hint: () => actions.takeHint(course.id, task.id),
+      skip: () => actions.skipTask(course.id, task.id),
+    },
+  })
 
   // Сквозная нумерация задач по всему уроку
   let count = 0
 
   return (
     <div className="lesson">
-      <a className="back" href="#/">
-        ← Все уроки
-      </a>
+      {links && (
+        <a className="back" href={href.course(course.id)}>
+          ← Все уроки
+        </a>
+      )}
 
       <header className="lesson__head">
         <div className="muted">Урок {number}</div>
@@ -77,31 +141,31 @@ export default function Lesson({ lesson, number, prev, next, progress, setTaskSt
         </ul>
       </header>
 
-      <section className="section">
-        <h2 className="section-title">Запись занятия</h2>
+      <section className="section" aria-label="Запись занятия">
         <Video
           url={lesson.videoUrl}
           title={lesson.title}
           vertical={lesson.videoVertical}
           quiz={lesson.quiz}
-          quizState={quizState}
-          onQuizAnswer={onQuizAnswer}
+          quizState={saved?.quiz?.[lesson.id]}
+          onQuizAnswer={(i, choice, options) => actions.answerQuiz(course.id, lesson.id, i, choice, options)}
+          onQuizSkipRetry={(i) => actions.skipQuizRetry(course.id, lesson.id, i)}
         />
       </section>
 
-      {tasks.length > 0 && (
+      {tasks.length > 0 && ready && (
         <section className="section" id="homework">
           <div className="hw-head">
             <h2 className="section-title">Домашнее задание</h2>
             <div className="hw-head__stat">
-              Решено {solved} из {tasks.length} · <b>{xpEarned} XP</b>
+              Решено {solved} из {tasks.length} · {xpEarned} XP
             </div>
           </div>
 
           <div className="hw">
             {lesson.tasks.map((item) => {
               const first = count + 1
-              if (Array.isArray(item.tasks)) {
+              if (isGroup(item)) {
                 if (item.tasks.length === 0) return null
                 count += item.tasks.length
                 return (
@@ -110,45 +174,39 @@ export default function Lesson({ lesson, number, prev, next, progress, setTaskSt
                     group={item}
                     firstNumber={first}
                     st={st}
-                    setTaskState={setTaskState}
+                    taskProps={taskProps}
                   />
                 )
               }
               count += 1
               return (
-                <div className="card" key={item.id}>
-                  <Task
-                    task={item}
-                    index={first - 1}
-                    state={st(item)}
-                    onChange={(s) => setTaskState(item.id, s)}
-                    hasNext={false}
-                  />
-                </div>
+                <TaskCard key={item.id} props={taskProps(item)} number={first} />
               )
             })}
           </div>
         </section>
       )}
 
-      <nav className="lesson-nav">
-        {prev ? (
-          <a href={`#/lesson/${prev.id}`}>
-            <small>← Предыдущий урок</small>
-            {prev.title}
-          </a>
-        ) : (
-          <span />
-        )}
-        {next ? (
-          <a className="lesson-nav__next" href={`#/lesson/${next.id}`}>
-            <small>Следующий урок →</small>
-            {next.title}
-          </a>
-        ) : (
-          <span />
-        )}
-      </nav>
+      {links && (
+        <nav className="lesson-nav">
+          {prev ? (
+            <a href={href.lesson(course.id, prev.id)}>
+              <small>← Предыдущий урок</small>
+              {prev.title}
+            </a>
+          ) : (
+            <span />
+          )}
+          {next ? (
+            <a className="lesson-nav__next" href={href.lesson(course.id, next.id)}>
+              <small>Следующий урок →</small>
+              {next.title}
+            </a>
+          ) : (
+            <span />
+          )}
+        </nav>
+      )}
     </div>
   )
 }

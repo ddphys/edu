@@ -1,29 +1,50 @@
+import { createContext, useContext } from 'react'
 import katex from 'katex'
+import { parseInline, parseText } from '../content/text.js'
 
-// Рендерит текст с формулами: $...$ — в строке, $$...$$ — отдельным блоком.
-// Пустая строка между абзацами = новый абзац.
-function renderInline(text) {
-  const parts = text.split(/(\$\$[\s\S]+?\$\$|\$[^$]+?\$)/g)
-  return parts
-    .map((p) => {
-      if (p.startsWith('$$')) {
-        return katex.renderToString(p.slice(2, -2), { displayMode: true, throwOnError: false })
-      }
-      if (p.startsWith('$')) {
-        return katex.renderToString(p.slice(1, -1), { throwOnError: false })
-      }
-      return p.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\*\*(.+?)\*\*/g, '<b>$1</b>').replace(/\n/g, '<br/>')
-    })
+// Рендерит текст с разметкой (она описана в content/text.js):
+// формулы $...$ и $$...$$, **жирный**, абзацы и картинки с подписью ![Подпись](файл.png).
+
+// Откуда брать картинки: функция (имя файла) → { src, w, h } или null, если такой картинки нет.
+// На странице курса это картинки курса, в редакторе — картинки из черновика.
+export const ImagesContext = createContext(() => null)
+
+const escapeHtml = (s) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+
+function renderInline(inline) {
+  return inline
+    .map((part) =>
+      part.type === 'math'
+        ? katex.renderToString(part.value, { displayMode: part.display, throwOnError: false })
+        : escapeHtml(part.value).replace(/\*\*(.+?)\*\*/g, '<b>$1</b>').replace(/\n/g, '<br/>'),
+    )
     .join('')
 }
 
+// Картинка с подписью. Размер известен заранее (он записан в курсе), поэтому место под картинку
+// занято ещё до загрузки и страница не дёргается; шире своего блока картинка не становится.
+function Figure({ block }) {
+  const info = useContext(ImagesContext)(block.name)
+  if (!info) return <div className="figure figure--missing">Картинка «{block.name}» не найдена</div>
+  const width = block.width ?? Math.min(info.w, 640)
+  return (
+    <figure className="figure" style={{ maxWidth: `min(100%, ${width}px)` }}>
+      <img src={info.src} width={info.w} height={info.h} alt={block.caption.replace(/\$/g, '')} loading="lazy" decoding="async" />
+      {block.caption && <figcaption dangerouslySetInnerHTML={{ __html: renderInline(parseInline(block.caption)) }} />}
+    </figure>
+  )
+}
+
 export default function MathText({ text, className = '' }) {
-  const paragraphs = text.split(/\n\s*\n/)
   return (
     <div className={`math ${className}`}>
-      {paragraphs.map((p, i) => (
-        <p key={i} dangerouslySetInnerHTML={{ __html: renderInline(p.trim()) }} />
-      ))}
+      {parseText(text).map((block, i) =>
+        block.type === 'image' ? (
+          <Figure key={i} block={block} />
+        ) : (
+          <p key={i} dangerouslySetInnerHTML={{ __html: renderInline(block.inline) }} />
+        ),
+      )}
     </div>
   )
 }

@@ -152,7 +152,9 @@ function Player({ source, title, withApi, onTime, onEnded, api }) {
   )
 }
 
-function Quiz({ quiz, head, saved, onAnswer, onSkip, onContinue, continueLabel }) {
+// Вопрос поверх видео. Верный вариант и пояснение (shown) приходят только после ответа:
+// до ответа у страницы их нет.
+function Quiz({ quiz, head, saved, shown, busy, onAnswer, onSkip, onContinue, continueLabel }) {
   const answered = saved?.choice != null
   return (
     <div className="quiz">
@@ -161,10 +163,10 @@ function Quiz({ quiz, head, saved, onAnswer, onSkip, onContinue, continueLabel }
       <div className="quiz__options">
         {quiz.options.map((o, i) => {
           let cls = ''
-          if (answered && i === quiz.correct) cls = 'is-right'
+          if (answered && i === shown?.correct) cls = 'is-right'
           else if (answered && i === saved.choice) cls = 'is-wrong'
           return (
-            <button key={i} className={`quiz__option ${cls}`} disabled={answered} onClick={() => onAnswer(i)}>
+            <button key={i} className={`quiz__option ${cls}`} disabled={answered || busy} onClick={() => onAnswer(i)}>
               <MathText text={o} />
             </button>
           )
@@ -173,7 +175,7 @@ function Quiz({ quiz, head, saved, onAnswer, onSkip, onContinue, continueLabel }
       {answered && (
         <div className={`quiz__result ${saved.ok ? 'is-ok' : 'is-bad'}`}>
           <b>{saved.ok ? 'Верно!' : 'Неверно — правильный ответ выделен зелёным.'}</b>
-          {quiz.explain && <MathText text={quiz.explain} />}
+          {shown?.explain && <MathText text={shown.explain} />}
         </div>
       )}
       <div className="quiz__actions">
@@ -199,7 +201,9 @@ const FullscreenIcon = ({ exit }) => (
 
 const fullscreenElement = () => document.fullscreenElement || document.webkitFullscreenElement
 
-export default function Video({ url, title, vertical = false, quiz = [], quizState = {}, onQuizAnswer }) {
+// onQuizAnswer(номер, выбор, { retry }) и onQuizSkipRetry(номер) уходят в интерфейс api;
+// onQuizAnswer возвращает { correct, explain } — верный вариант и пояснение.
+export default function Video({ url, title, vertical = false, quiz = [], quizState = {}, onQuizAnswer, onQuizSkipRetry }) {
   const source = parseVideo(url)
   const api = useRef(null)
   const box = useRef(null)
@@ -211,6 +215,23 @@ export default function Video({ url, title, vertical = false, quiz = [], quizSta
   const [review, setReview] = useState(null)
   // Наш полноэкранный режим: 'native' — средствами браузера, 'css' — растянутый блок (айфон)
   const [fs, setFs] = useState(null)
+  // Верные варианты и пояснения к вопросам, на которые ответили в этом просмотре
+  const [shown, setShown] = useState({})
+  const [busy, setBusy] = useState(false)
+
+  async function answer(i, choice, options) {
+    if (busy) return
+    setBusy(true)
+    try {
+      const result = await onQuizAnswer(i, choice, options)
+      setShown((s) => ({ ...s, [i]: { correct: result.correct, explain: result.explain } }))
+      return result
+    } catch {
+      return null
+    } finally {
+      setBusy(false)
+    }
+  }
 
   useEffect(() => {
     const sync = () => setFs((v) => (fullscreenElement() === box.current ? 'native' : v === 'native' ? null : v))
@@ -240,10 +261,7 @@ export default function Video({ url, title, vertical = false, quiz = [], quizSta
       <div className="video video--empty">
         <div>
           <strong>Запись занятия пока не добавлена</strong>
-          <p>
-            Вставьте ссылку на YouTube, Rutube, Kinescope или mp4-файл в поле <code>videoUrl</code> этого
-            урока в файле <code>src/data/course.js</code>
-          </p>
+          <p>Ссылка на YouTube, Rutube, Kinescope или mp4-файл добавляется в редакторе курса</p>
         </div>
       </div>
     )
@@ -313,7 +331,9 @@ export default function Video({ url, title, vertical = false, quiz = [], quizSta
         quiz={quiz[active]}
         head={`Вопрос ${active + 1} из ${quiz.length} · ${fmtTime(quiz[active].time)}`}
         saved={quizState[active]}
-        onAnswer={(choice) => onQuizAnswer(active, { ...quizState[active], choice, ok: choice === quiz[active].correct })}
+        shown={shown[active]}
+        busy={busy}
+        onAnswer={(choice) => answer(active, choice)}
         onSkip={closeActive}
         onContinue={closeActive}
         continueLabel="Продолжить просмотр"
@@ -328,14 +348,14 @@ export default function Video({ url, title, vertical = false, quiz = [], quizSta
         quiz={quiz[i]}
         head={`Повторим · вопрос ${review.pos + 1} из ${review.queue.length}`}
         saved={review.fresh ? quizState[i] : null}
-        onAnswer={(choice) => {
-          const ok = choice === quiz[i].correct
-          onQuizAnswer(i, { choice, ok, retried: true })
-          setReview((r) => ({ ...r, fresh: true }))
+        shown={shown[i]}
+        busy={busy}
+        onAnswer={async (choice) => {
+          if (await answer(i, choice, { retry: true })) setReview((r) => ({ ...r, fresh: true }))
         }}
         onSkip={() => {
           // Пропуск в повторе тоже считается: в конце видео вопрос задаётся один раз
-          onQuizAnswer(i, { ...quizState[i], retried: true })
+          onQuizSkipRetry(i)
           reviewNext()
         }}
         onContinue={reviewNext}

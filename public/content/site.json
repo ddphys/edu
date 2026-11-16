@@ -1,0 +1,10 @@
+{
+  "format": 1,
+  "title": "ddphys",
+  "legacyCourse": "physics-olymp-10-11",
+  "about": "Курсы по физике: записи занятий и домашние задания с подсказками и разбором.",
+  "courses": [
+    "physics-olymp-10-11",
+    "demo"
+  ]
+}

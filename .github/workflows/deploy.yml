@@ -24,6 +24,8 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
+      # Тесты и проверка контента идут до сборки: сломанная версия не публикуется
+      - run: npm test
       - run: npm run build
       - uses: actions/upload-pages-artifact@v3
         with:
